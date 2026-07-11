@@ -1,6 +1,5 @@
-
 module.exports = {
-  Streetwear: "4c175a54-e27d-4c80-8add-75ff844d5cff",
-  Y2K: "ae79655d-f0cd-4df1-b76c-978c3980b53a",
-  Minimalist: "b2d07668-db76-4e55-b2bf-54bfc919ca4c",
+  "Neon Static": "7242b96a-acca-4bd0-8331-2e561c0b11cb",
+  "Golden Hour": "eec4186e-f157-441d-9b99-2fad90135c5d",
+  "Vault Heir": "774f45e8-48f6-4e13-9211-ad8c44c7f847"
 };

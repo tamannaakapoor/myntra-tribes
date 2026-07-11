@@ -2,7 +2,7 @@ const createCsvWriter =
 require("csv-writer").createObjectCsvWriter;
 
 const products =
-require("./output/cleanProducts.json");
+require("./output/Products.json");
 
 const csvWriter = createCsvWriter({
 
