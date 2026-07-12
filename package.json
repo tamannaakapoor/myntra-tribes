@@ -2,16 +2,26 @@
   "name": "myntra-tribes",
   "version": "0.1.0",
   "private": true,
+  "description": "Myntra Hacker-ramp: Fashion is Identity",
+  "main": "src/server.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:backend": "nodemon src/server.js",
+    "start:backend": "node src/server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.x",
+    "cors": "^2.x",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^17.x",
+    "express": "^5.x",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
+    "playwright": "^1.61.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zustand": "^5.0.14"
@@ -23,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "nodemon": "^3.1.14",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
