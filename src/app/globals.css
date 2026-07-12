@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/* 
+  Injects your custom variables directly into Tailwind's utility classes. 
+  You can now use classes like `bg-theme-bg` or `text-theme-accent` anywhere.
+*/
+@theme {
+  --color-theme-bg: var(--bg-primary);
+  --color-theme-text: var(--text-main);
+  --color-theme-accent: var(--accent);
+}
+
+/* Tribe 0: Default / Unassigned */
+:root {
+  --bg-primary: #ffffff;
+  --text-main: #111111;
+  --accent: #ff3f6c; /* Myntra Pink */
+}
+
+/* Tribe 1: Cinematic Vintage */
+.theme-vintage {
+  --bg-primary: #121013;
+  --text-main: #f5f0f6;
+  --accent: #9d2b3a; /* Deep, rich red */
+}
+
+/* Tribe 2: Neon Cyberpunk */
+.theme-cyberpunk {
+  --bg-primary: #0a0512;
+  --text-main: #00ffcc; /* Bright cyan */
+  --accent: #bc00dd; /* Hot magenta */
+}
+
+/* Tribe 3: Cottagecore */
+.theme-cottagecore {
+  --bg-primary: #fdfbf7;
+  --text-main: #2d4a22; /* Forest green */
+  --accent: #d4a373; /* Warm linen */
+}
+
+/* Tribe 4: Y2K Streetwear */
+.theme-y2k {
+  --bg-primary: #ff5e00;
+  --text-main: #ffffff;
+  --accent: #0000ff; /* Electric blue */
+}
+
+/* Ensures the transition between tribes is incredibly smooth */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: background-color 0.6s ease-out, color 0.6s ease-out;
+}
