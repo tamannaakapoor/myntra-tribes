@@ -1,14 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useBuilderStore } from '@/store/useBuilderStore';
-import { useTribeStore } from '@/store/useTribeStore'; // <-- 1. Import the Tribe Store
+import { useTribeStore } from '@/store/useTribeStore';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function PublishSection() {
   const savedItems = useBuilderStore((state) => state.savedItems);
   const clearBoard = useBuilderStore((state) => state.clearBoard);
-  const avatarId = useTribeStore((state) => state.avatarId); // <-- 2. Pull the real user ID
+  const avatarId = useTribeStore((state) => state.avatarId);
   const router = useRouter();
   
   const [title, setTitle] = useState('');
@@ -20,7 +20,6 @@ export default function PublishSection() {
     if (savedItems.length === 0) return alert("Add some items first!");
     if (!title) return alert("Give your lookbook a title!");
     
-    // 3. Block publishing if they haven't been assigned an avatar ID yet!
     if (!avatarId) {
       return alert("You need to take the Vibe Quiz first to create your avatar!");
     }
@@ -33,7 +32,6 @@ export default function PublishSection() {
         .map(tag => tag.trim().replace(/^#/, ''))
         .filter(tag => tag.length > 0);
       
-      // 4. Send the REAL avatarId to the database!
       const { data: lookbookData, error: lookbookError } = await supabase
         .from('lookbooks')
         .insert([{ 
@@ -60,14 +58,12 @@ export default function PublishSection() {
 
       if (itemsError) throw itemsError;
 
-      // 5. Success! Clear board and route to the Feed page
       alert(`Successfully published "${title}" with ${savedItems.length} items!`);
       clearBoard(); 
       setTitle('');
       setDescription('');
       setTags('');
       
-      // Tell Next.js to fetch new data and immediately navigate to the feed
       router.refresh(); 
       router.push('/feed');
 
@@ -81,7 +77,6 @@ export default function PublishSection() {
 
   return (
     <div className="flex flex-col space-y-4 pt-4 border-t border-white/10 mt-auto">
-      
       <div className="flex flex-col space-y-1">
         <label className="text-xs font-bold tracking-wider uppercase opacity-60">Lookbook Title</label>
         <input 
