@@ -1,7 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import LookbookCanvas from '@/components/LookbookCanvas';
 import CatalogBrowser from '@/components/CatalogBrowser';
-import PublishSection from '@/components/PublishSection'; // <-- We import the new component here
+import dynamic from 'next/dynamic';
+
+// This disables Server-Side Rendering (SSR) for the Publish component
+const PublishSection = dynamic(() => import('@/components/PublishSection'), {
+  ssr: false,
+}); // <-- We import the new component here
 import { Product } from '@/store/useBuilderStore';
 
 // Next.js Server Component
