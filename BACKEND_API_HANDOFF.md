@@ -9,7 +9,7 @@ This document contains all backend APIs that the frontend team can integrate to 
 ### Local
 
 ```
-http://localhost:5000/api
+https://myntra-tribes.onrender.com//api
 ```
 
 ### Production
