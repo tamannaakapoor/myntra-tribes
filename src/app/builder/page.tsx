@@ -1,7 +1,7 @@
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import LookbookCanvas from '@/components/LookbookCanvas';
 import CatalogBrowser from '@/components/CatalogBrowser';
-import dynamic from 'next/dynamic';
 
 // This disables Server-Side Rendering (SSR) for the Publish component
 const PublishSection = dynamic(() => import('@/components/PublishSection'), {
