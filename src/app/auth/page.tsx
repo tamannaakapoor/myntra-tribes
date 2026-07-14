@@ -18,40 +18,20 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const endpoint = isLogin ? "/auth/login" : "/auth/signup";
+      // ⚠️ TEMPORARY MOCK BYPASS
+      // We are faking the backend response here so you can test your Vercel deployment!
+      
+      // 1. Simulate a 1.5-second network request
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-      const body = isLogin
-        ? {
-            email,
-            password,
-          }
-        : {
-            username: name,
-            email,
-            password,
-          };
+      // 2. Save a fake JWT and User to localStorage
+      localStorage.setItem("tribe_jwt", "mock_token_12345");
+      localStorage.setItem(
+        "tribe_user",
+        JSON.stringify({ name: isLogin ? "Test User" : name, email })
+      );
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Authentication failed");
-      }
-
-      // Save JWT for protected API calls
-      localStorage.setItem("tribe_jwt", data.session.access_token);
-
-      // Save logged-in user details
-      localStorage.setItem("tribe_user", JSON.stringify(data.user));
-
-      // Go to onboarding
+      // 3. Push to the Onboarding Vibe Quiz!
       router.push("/onboarding");
       
     } catch (error: any) {
