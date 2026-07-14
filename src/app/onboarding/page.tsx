@@ -6,13 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useTribeStore, ThemeConfig, TribeType } from '@/store/useTribeStore';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
-// --- TRIBE DATA (For Manual Bypass) ---
+// --- TRIBE DATA WITH IMAGES ---
 const TRIBES = {
   'neon-static': {
     name: 'Neon Static',
     slug: 'neon-static' as TribeType,
     description: 'Cyberpunk × Y2K fusion with glitch aesthetics',
     colors: ['#8A2BE2', '#39FF14'],
+    image: 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=800&auto=format&fit=crop',
     config: { font: "Orbitron", mode: "dark", text: "#FFFFFF", accent: "#39FF14", primary: "#8A2BE2", surface: "#1A1A1A", cardStyle: "glass", secondary: "#39FF14", background: "#0B0B0B", buttonStyle: "neon", bannerAnimation: "glitch" } as ThemeConfig
   },
   'golden-hour': {
@@ -20,6 +21,7 @@ const TRIBES = {
     slug: 'golden-hour' as TribeType,
     description: 'Cottagecore × Soft Girl fusion',
     colors: ['#F5E6CC', '#C97B63'],
+    image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop',
     config: { font: "Playfair Display", mode: "light", text: "#4B3A2F", accent: "#A3B18A", primary: "#F5E6CC", surface: "#FFFFFF", cardStyle: "soft", secondary: "#C97B63", background: "#FFF8EE", buttonStyle: "rounded", bannerAnimation: "fade" } as ThemeConfig
   },
   'vault-heir': {
@@ -27,11 +29,21 @@ const TRIBES = {
     slug: 'vault-heir' as TribeType,
     description: 'Old Money × Quiet Luxury',
     colors: ['#1F3A5F', '#D2B48C'],
+    image: 'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?q=80&w=800&auto=format&fit=crop',
     config: { font: "Cormorant Garamond", mode: "light", text: "#1F3A5F", accent: "#355070", primary: "#1F3A5F", surface: "#F8F8F8", cardStyle: "outline", secondary: "#D2B48C", background: "#FFFFFF", buttonStyle: "minimal", bannerAnimation: "slide" } as ThemeConfig
   }
 };
 
-// Fallback questions in case the backend API isn't live on Vercel yet
+// --- DYNAMIC QUESTION BACKGROUNDS ---
+const QUESTION_IMAGES: Record<string, string> = {
+  weekend: 'https://images.unsplash.com/photo-1563804447971-6e113ab80713?q=80&w=1200&auto=format&fit=crop',
+  colors: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
+  shoes: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1200&auto=format&fit=crop',
+  vacation: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1200&auto=format&fit=crop',
+  room: 'https://images.unsplash.com/photo-1618202133208-2907bebba9e1?q=80&w=1200&auto=format&fit=crop',
+  accessory: 'https://images.unsplash.com/photo-1515562141207-7a8efd3dc990?q=80&w=1200&auto=format&fit=crop',
+};
+
 const FALLBACK_QUESTIONS = [
   { id: 1, key: "weekend", question: "What's your ideal weekend?", options: ["Neon city nightlife", "Picnic in nature", "Brunch at a luxury club"] },
   { id: 2, key: "colors", question: "Which color palette attracts you most?", options: ["Purple & Green", "Cream & Sage", "Navy & Beige"] },
@@ -53,7 +65,6 @@ export default function OnboardingPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
-  // 1. Fetch Questions from Aditi's Backend on Mount
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -65,7 +76,7 @@ export default function OnboardingPage() {
           }
         }
       } catch (error) {
-        console.warn("Backend not reachable, using fallback questions for UI testing.");
+        console.warn("Backend not reachable, using fallback questions.");
       } finally {
         setIsLoadingQuestions(false);
       }
@@ -73,7 +84,6 @@ export default function OnboardingPage() {
     fetchQuestions();
   }, []);
 
-  // 2. Handle Option Selection
   const handleOptionSelect = async (questionKey: string, selectedOption: string) => {
     const newAnswers = { ...answers, [questionKey]: selectedOption };
     setAnswers(newAnswers);
@@ -85,7 +95,6 @@ export default function OnboardingPage() {
     }
   };
 
-  // 3. Submit Answers to Assign Tribe API
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsCalculating(true);
     try {
@@ -96,22 +105,17 @@ export default function OnboardingPage() {
       });
       
       let assignedTribe;
-
       if (res.ok) {
         const data = await res.json();
         assignedTribe = data.assignedTribe;
       } else {
-        // Mock calculation if API fails
         await new Promise(r => setTimeout(r, 1500));
-        assignedTribe = TRIBES['neon-static'].config; // default fallback
+        assignedTribe = TRIBES['neon-static'].config; 
       }
 
       setTribe(assignedTribe.slug, assignedTribe.theme_config || assignedTribe);
       router.push('/builder');
-
     } catch (error) {
-      console.error("Assignment failed", error);
-      // Fallback
       setTribe('neon-static', TRIBES['neon-static'].config);
       router.push('/builder');
     }
@@ -123,7 +127,6 @@ export default function OnboardingPage() {
     router.push('/builder');
   };
 
-  // --- LOADING VIEW ---
   if (isLoadingQuestions) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -138,33 +141,42 @@ export default function OnboardingPage() {
       <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden text-white">
         <button 
           onClick={() => setShowManual(false)}
-          className="absolute top-8 left-8 opacity-50 hover:opacity-100 transition-opacity font-bold tracking-widest text-xs uppercase"
+          className="absolute top-8 left-8 opacity-50 hover:opacity-100 transition-opacity font-bold tracking-widest text-xs uppercase z-20"
         >
           ← Back to Quiz
         </button>
 
-        <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4 text-center">
-          Choose Your <span className="text-[#ff3f6c]">Aesthetic</span>
-        </h1>
-        <p className="text-white/50 mb-12 text-center max-w-md">Select your vibe manually to instantly reskin the studio and begin curating your looks.</p>
+        <div className="z-10 text-center mb-12 mt-12">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">
+            Choose Your <span className="text-[#ff3f6c]">Aesthetic</span>
+          </h1>
+          <p className="text-white/50 max-w-md mx-auto">Select your vibe manually to instantly reskin the studio and begin curating your looks.</p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full z-10">
           {Object.values(TRIBES).map((tribe) => (
             <button
               key={tribe.slug}
               onClick={() => manuallyAssignTribe(tribe.slug as keyof typeof TRIBES)}
-              className="group relative h-64 rounded-3xl overflow-hidden border border-white/10 hover:border-white/40 transition-all duration-500 text-left"
+              className="group relative h-[400px] rounded-3xl overflow-hidden border border-white/10 hover:border-white/40 transition-all duration-500 text-left"
             >
+              {/* High Fashion Background Image */}
               <div 
-                className="absolute inset-0 opacity-20 group-hover:opacity-60 transition-opacity duration-500"
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                style={{ backgroundImage: `url(${tribe.image})` }}
+              />
+              
+              {/* Gradient Overlays for Readability */}
+              <div 
+                className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity duration-500 mix-blend-overlay"
                 style={{ background: `linear-gradient(135deg, ${tribe.colors[0]}, ${tribe.colors[1]})` }}
               />
-              <div className="absolute inset-0 bg-black/60 group-hover:bg-black/20 transition-colors duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent opacity-90 group-hover:opacity-70 transition-opacity duration-500" />
               
-              <div className="relative h-full flex flex-col justify-end p-6">
-                <Sparkles className="w-6 h-6 mb-3 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-4 group-hover:translate-y-0 duration-500" style={{ color: tribe.colors[1] }} />
-                <h3 className="text-2xl font-black tracking-tight">{tribe.name}</h3>
-                <p className="text-sm text-white/70 mt-1">{tribe.description}</p>
+              <div className="relative h-full flex flex-col justify-end p-8">
+                <Sparkles className="w-8 h-8 mb-4 opacity-0 group-hover:opacity-100 transition-all transform translate-y-4 group-hover:translate-y-0 duration-500" style={{ color: tribe.colors[1] }} />
+                <h3 className="text-3xl font-black tracking-tight mb-2">{tribe.name}</h3>
+                <p className="text-sm text-white/70">{tribe.description}</p>
               </div>
             </button>
           ))}
@@ -173,7 +185,6 @@ export default function OnboardingPage() {
     );
   }
 
-  // --- CALCULATING VIEW ---
   if (isCalculating) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-white">
@@ -186,15 +197,29 @@ export default function OnboardingPage() {
   // --- INTERACTIVE QUIZ VIEW ---
   const currentQ = questions[currentIndex];
   const progress = ((currentIndex) / questions.length) * 100;
+  const bgImage = QUESTION_IMAGES[currentQ.key] || QUESTION_IMAGES['weekend']; // Fallback image
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] bg-[#ff3f6c]/5 rounded-full blur-[150px] pointer-events-none" />
+      {/* Dynamic Cross-Fading Background */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentQ.key}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 0.35, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        />
+      </AnimatePresence>
+
+      {/* Heavy vignette overlay to ensure text is perfectly readable */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-[#0a0a0a]/60 to-[#0a0a0a] pointer-events-none" />
 
       {/* Progress Bar */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+      <div className="absolute top-0 left-0 w-full h-1 bg-white/5 z-20">
         <motion.div 
           className="h-full bg-gradient-to-r from-[#ff3f6c] to-fuchsia-500"
           initial={{ width: 0 }}
@@ -203,35 +228,35 @@ export default function OnboardingPage() {
         />
       </div>
 
-      <div className="w-full max-w-xl z-10">
+      <div className="w-full max-w-2xl z-20">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="flex flex-col space-y-8"
+            className="flex flex-col space-y-10"
           >
             
-            <div className="text-center space-y-3">
-              <span className="text-[#ff3f6c] font-bold tracking-widest text-xs uppercase">
+            <div className="text-center space-y-4">
+              <span className="text-[#ff3f6c] font-bold tracking-widest text-xs uppercase drop-shadow-md">
                 Question {currentIndex + 1} of {questions.length}
               </span>
-              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+              <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-xl">
                 {currentQ.question}
               </h2>
             </div>
 
-            <div className="flex flex-col space-y-3">
+            <div className="flex flex-col space-y-4">
               {currentQ.options.map((option, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleOptionSelect(currentQ.key, option)}
-                  className="w-full p-5 rounded-2xl bg-white/5 border border-white/10 text-white font-medium text-lg hover:bg-white/10 hover:border-[#ff3f6c]/50 transition-all flex items-center justify-between group"
+                  className="w-full p-6 rounded-2xl bg-[#0a0a0a]/60 backdrop-blur-md border border-white/10 text-white font-medium text-xl hover:bg-white/10 hover:border-[#ff3f6c]/50 transition-all duration-300 flex items-center justify-between group shadow-xl"
                 >
                   {option}
-                  <ArrowRight className="w-5 h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#ff3f6c]" />
+                  <ArrowRight className="w-6 h-6 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#ff3f6c]" />
                 </button>
               ))}
             </div>
@@ -240,10 +265,10 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </div>
 
-      <div className="absolute bottom-8 z-10">
+      <div className="absolute bottom-8 z-20">
         <button 
           onClick={() => setShowManual(true)}
-          className="text-white/40 hover:text-white transition-colors text-sm font-semibold tracking-wide uppercase"
+          className="text-white/40 hover:text-white transition-colors text-sm font-semibold tracking-widest uppercase"
         >
           Skip & Choose Manually
         </button>
