@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useTribeStore, ThemeConfig, TribeType } from '@/store/useTribeStore';
-import { X, Heart, Sparkles } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 
-// --- TRIBE DATA (From Aditi's DB Snippet) ---
+// --- TRIBE DATA (For Manual Bypass) ---
 const TRIBES = {
   'neon-static': {
     name: 'Neon Static',
@@ -31,65 +31,90 @@ const TRIBES = {
   }
 };
 
-// --- MOODBOARD IMAGES ---
-const CARDS = [
-  { id: 1, url: 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=800&auto=format&fit=crop', tribe: 'neon-static' },
-  { id: 2, url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=800&auto=format&fit=crop', tribe: 'golden-hour' },
-  { id: 3, url: 'https://images.unsplash.com/photo-1596455607563-ad6193f76b17?q=80&w=800&auto=format&fit=crop', tribe: 'vault-heir' },
-  { id: 4, url: 'https://images.unsplash.com/photo-1616091093714-c64882e9ab55?q=80&w=800&auto=format&fit=crop', tribe: 'neon-static' },
-  { id: 5, url: 'https://images.unsplash.com/photo-1492447105260-2e947425b5cc?q=80&w=800&auto=format&fit=crop', tribe: 'golden-hour' },
-  { id: 6, url: 'https://images.unsplash.com/photo-1578939700101-8bf77d3f2719?q=80&w=800&auto=format&fit=crop', tribe: 'vault-heir' }
+// Fallback questions in case the backend API isn't live on Vercel yet
+const FALLBACK_QUESTIONS = [
+  { id: 1, key: "weekend", question: "What's your ideal weekend?", options: ["Neon city nightlife", "Picnic in nature", "Brunch at a luxury club"] },
+  { id: 2, key: "colors", question: "Which color palette attracts you most?", options: ["Purple & Green", "Cream & Sage", "Navy & Beige"] },
+  { id: 3, key: "shoes", question: "Pick your favorite footwear", options: ["Chunky Sneakers", "Sandals", "Loafers"] },
+  { id: 4, key: "vacation", question: "Choose your dream vacation", options: ["Tokyo", "Swiss Countryside", "Monaco"] },
+  { id: 5, key: "room", question: "Your room aesthetic?", options: ["LED lights", "Plants & Wood", "Minimal Luxury"] },
+  { id: 6, key: "accessory", question: "Pick an accessory", options: ["Silver Chains", "Straw Hat", "Luxury Watch"] }
 ];
 
 export default function OnboardingPage() {
   const router = useRouter();
   const setTribe = useTribeStore((state) => state.setTribe);
   
-  const [cards, setCards] = useState(CARDS);
-  const [scores, setScores] = useState({ 'neon-static': 0, 'golden-hour': 0, 'vault-heir': 0 });
+  const [questions, setQuestions] = useState(FALLBACK_QUESTIONS);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  
   const [showManual, setShowManual] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
 
-  // Framer Motion Drag Values for the active card
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-15, 15]);
-  const opacityRight = useTransform(x, [0, 150], [0, 1]);
-  const opacityLeft = useTransform(x, [0, -150], [0, 1]);
+  // 1. Fetch Questions from Aditi's Backend on Mount
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quiz/questions`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.questions.length > 0) {
+            setQuestions(data.questions);
+          }
+        }
+      } catch (error) {
+        console.warn("Backend not reachable, using fallback questions for UI testing.");
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    fetchQuestions();
+  }, []);
 
-  const handleSwipe = (direction: 'left' | 'right', tribeSlug: string) => {
-    if (direction === 'right') {
-      setScores(prev => ({ ...prev, [tribeSlug]: prev[tribeSlug as keyof typeof scores] + 1 }));
+  // 2. Handle Option Selection
+  const handleOptionSelect = async (questionKey: string, selectedOption: string) => {
+    const newAnswers = { ...answers, [questionKey]: selectedOption };
+    setAnswers(newAnswers);
+
+    if (currentIndex < questions.length - 1) {
+      setTimeout(() => setCurrentIndex(prev => prev + 1), 300);
+    } else {
+      await submitQuiz(newAnswers);
     }
-    
-    setTimeout(() => {
-      setCards(prev => prev.slice(1));
-    }, 200);
   };
 
-  // Watch for end of quiz
-  useEffect(() => {
-    if (cards.length === 0 && !showManual && !isCalculating) {
-      calculateAndAssignTribe();
-    }
-  }, [cards.length]);
-
-  const calculateAndAssignTribe = async () => {
+  // 3. Submit Answers to Assign Tribe API
+  const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsCalculating(true);
-    
-    // Simulate backend calculation delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tribes/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalAnswers)
+      });
+      
+      let assignedTribe;
 
-    // Find the highest score
-    const winningSlug = Object.keys(scores).reduce((a, b) => 
-      scores[a as keyof typeof scores] > scores[b as keyof typeof scores] ? a : b
-    ) as keyof typeof TRIBES;
+      if (res.ok) {
+        const data = await res.json();
+        assignedTribe = data.assignedTribe;
+      } else {
+        // Mock calculation if API fails
+        await new Promise(r => setTimeout(r, 1500));
+        assignedTribe = TRIBES['neon-static'].config; // default fallback
+      }
 
-    const winner = TRIBES[winningSlug];
-    
-    // Update Global Zustand State to trigger immediate UI reskin
-    setTribe(winner.slug, winner.config);
-    
-    router.push('/builder');
+      setTribe(assignedTribe.slug, assignedTribe.theme_config || assignedTribe);
+      router.push('/builder');
+
+    } catch (error) {
+      console.error("Assignment failed", error);
+      // Fallback
+      setTribe('neon-static', TRIBES['neon-static'].config);
+      router.push('/builder');
+    }
   };
 
   const manuallyAssignTribe = (slug: keyof typeof TRIBES) => {
@@ -97,6 +122,15 @@ export default function OnboardingPage() {
     setTribe(selected.slug, selected.config);
     router.push('/builder');
   };
+
+  // --- LOADING VIEW ---
+  if (isLoadingQuestions) {
+    return (
+      <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-[#ff3f6c] rounded-full animate-spin" />
+      </main>
+    );
+  }
 
   // --- MANUAL OVERRIDE VIEW ---
   if (showManual) {
@@ -144,92 +178,74 @@ export default function OnboardingPage() {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-white">
         <div className="w-16 h-16 border-4 border-white/10 border-t-[#ff3f6c] rounded-full animate-spin mb-6" />
-        <h2 className="text-2xl font-bold tracking-widest uppercase animate-pulse">Analyzing Vibe...</h2>
+        <h2 className="text-2xl font-bold tracking-widest uppercase animate-pulse">Calculating Vibe...</h2>
       </main>
     );
   }
 
-  // --- SWIPE QUIZ VIEW ---
+  // --- INTERACTIVE QUIZ VIEW ---
+  const currentQ = questions[currentIndex];
+  const progress = ((currentIndex) / questions.length) * 100;
+
   return (
-    <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center overflow-hidden relative">
+    <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
       {/* Background Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] bg-[#ff3f6c]/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] h-[80vw] bg-[#ff3f6c]/5 rounded-full blur-[150px] pointer-events-none" />
 
-      <div className="text-center z-10 mb-8 mt-12">
-        <h1 className="text-3xl font-black text-white tracking-tight uppercase">What's your vibe?</h1>
-        <p className="text-white/50 text-sm mt-2">Swipe Right to Keep, Left to Toss.</p>
+      {/* Progress Bar */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+        <motion.div 
+          className="h-full bg-gradient-to-r from-[#ff3f6c] to-fuchsia-500"
+          initial={{ width: 0 }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.5 }}
+        />
       </div>
 
-      {/* The Stack */}
-      <div className="relative w-full max-w-sm aspect-[3/4] flex items-center justify-center perspective-1000">
-        <AnimatePresence>
-          {cards.map((card, index) => {
-            const isTop = index === 0;
+      <div className="w-full max-w-xl z-10">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex flex-col space-y-8"
+          >
+            
+            <div className="text-center space-y-3">
+              <span className="text-[#ff3f6c] font-bold tracking-widest text-xs uppercase">
+                Question {currentIndex + 1} of {questions.length}
+              </span>
+              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                {currentQ.question}
+              </h2>
+            </div>
 
-            return (
-              <motion.div
-                key={card.id}
-                className="absolute inset-0 w-full h-full bg-zinc-800 rounded-3xl shadow-2xl overflow-hidden border border-white/10 origin-bottom"
-                style={{
-                  x: isTop ? x : 0,
-                  rotate: isTop ? rotate : 0,
-                  scale: isTop ? 1 : 1 - index * 0.04,
-                  y: isTop ? 0 : index * -15,
-                  zIndex: cards.length - index,
-                  backgroundImage: `url(${card.url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
-                drag={isTop ? "x" : false}
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.8}
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 100) handleSwipe('right', card.tribe);
-                  else if (info.offset.x < -100) handleSwipe('left', card.tribe);
-                }}
-                initial={{ scale: 0.8, opacity: 0, y: 50 }}
-                animate={{ scale: isTop ? 1 : 1 - index * 0.04, opacity: 1, y: isTop ? 0 : index * -15 }}
-                exit={{ x: x.get() > 0 ? 300 : -300, opacity: 0, transition: { duration: 0.2 } }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                
-                {/* Swipe Indicators (Heart/X) */}
-                {isTop && (
-                  <>
-                    <motion.div 
-                      className="absolute inset-0 bg-green-500/20 z-10 flex items-center justify-center"
-                      style={{ opacity: opacityRight }}
-                    >
-                      <div className="bg-green-500 rounded-full p-6 shadow-2xl scale-150">
-                        <Heart className="w-12 h-12 text-white fill-white" />
-                      </div>
-                    </motion.div>
-                    <motion.div 
-                      className="absolute inset-0 bg-red-500/20 z-10 flex items-center justify-center"
-                      style={{ opacity: opacityLeft }}
-                    >
-                      <div className="bg-red-500 rounded-full p-6 shadow-2xl scale-150">
-                        <X className="w-12 h-12 text-white stroke-[4px]" />
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-                
-                {/* Image Vignette Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80 pointer-events-none" />
-              </motion.div>
-            );
-          })}
+            <div className="flex flex-col space-y-3">
+              {currentQ.options.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleOptionSelect(currentQ.key, option)}
+                  className="w-full p-5 rounded-2xl bg-white/5 border border-white/10 text-white font-medium text-lg hover:bg-white/10 hover:border-[#ff3f6c]/50 transition-all flex items-center justify-between group"
+                >
+                  {option}
+                  <ArrowRight className="w-5 h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#ff3f6c]" />
+                </button>
+              ))}
+            </div>
+
+          </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="z-10 mt-12 mb-8">
+      <div className="absolute bottom-8 z-10">
         <button 
           onClick={() => setShowManual(true)}
           className="text-white/40 hover:text-white transition-colors text-sm font-semibold tracking-wide uppercase"
         >
-          Know your aesthetic? Choose manually.
+          Skip & Choose Manually
         </button>
       </div>
     </main>
