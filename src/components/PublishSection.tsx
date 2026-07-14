@@ -1,11 +1,14 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBuilderStore } from '@/store/useBuilderStore';
 import { useTribeStore } from '@/store/useTribeStore';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function PublishSection() {
+  // 1. We create an isMounted state to track when the browser is ready
+  const [isMounted, setIsMounted] = useState(false);
+  
   const savedItems = useBuilderStore((state) => state.savedItems);
   const clearBoard = useBuilderStore((state) => state.clearBoard);
   const avatarId = useTribeStore((state) => state.avatarId);
@@ -15,6 +18,11 @@ export default function PublishSection() {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // 2. This only runs on the browser, preventing server crashes!
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handlePublish = async () => {
     if (savedItems.length === 0) return alert("Add some items first!");
@@ -74,6 +82,11 @@ export default function PublishSection() {
       setIsPublishing(false);
     }
   };
+
+  // 3. If we are on the server, just return a loading placeholder
+  if (!isMounted) {
+    return <div className="mt-auto pt-4 border-t border-white/10 opacity-50 text-xs text-center font-bold tracking-widest uppercase">Loading Publisher...</div>;
+  }
 
   return (
     <div className="flex flex-col space-y-4 pt-4 border-t border-white/10 mt-auto">

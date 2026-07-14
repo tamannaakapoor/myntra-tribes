@@ -1,15 +1,9 @@
-import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase';
 import LookbookCanvas from '@/components/LookbookCanvas';
 import CatalogBrowser from '@/components/CatalogBrowser';
+import PublishSection from '@/components/PublishSection'; // <-- Normal import!
 import { Product } from '@/store/useBuilderStore';
 
-// This disables Server-Side Rendering (SSR) for the Publish component
-const PublishSection = dynamic(() => import('@/components/PublishSection'), {
-  ssr: false,
-});
-
-// Next.js Server Component
 export default async function BuilderPage() {
   let products: Product[] = [];
   
@@ -21,7 +15,6 @@ export default async function BuilderPage() {
 
   return (
     <main className="flex min-h-screen pt-20 px-4 md:px-8 max-w-7xl mx-auto gap-8 pb-20 relative">
-      
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[var(--accent)]/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
       <section className="w-full md:w-2/3 flex flex-col space-y-6">
