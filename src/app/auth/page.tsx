@@ -18,33 +18,45 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      // ⚠️  BACKEND INTEGRATION GOES HERE
-      /* 
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(`YOUR_BACKEND_URL${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isLogin ? { email, password } : { name, email, password })
-      });
-      const data = await response.json();
-      
-      if (!data.success) throw new Error(data.message);
-      
-      // Save the real JWT token!
-      localStorage.setItem('tribe_jwt', data.token);
-      */
+      const endpoint = isLogin ? "/auth/login" : "/auth/signup";
 
-      // 👇 FOR NOW: We simulate a successful network request so you can test the UI
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
-      
-      // We mock saving a JWT token to local storage
-      localStorage.setItem('tribe_jwt', 'mock_token_12345');
-      
-      // Success! Send them to the Vibe Quiz to get their aesthetic
-      router.push('/onboarding');
+      const body = isLogin
+        ? {
+            email,
+            password,
+          }
+        : {
+            username: name,
+            email,
+            password,
+          };
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Authentication failed");
+      }
+
+      // Save JWT for protected API calls
+      localStorage.setItem("tribe_jwt", data.session.access_token);
+
+      // Save logged-in user details
+      localStorage.setItem("tribe_user", JSON.stringify(data.user));
+
+      // Go to onboarding
+      router.push("/onboarding");
       
     } catch (error: any) {
-      alert(error.message || "Authentication failed");
+      alert(error.message || "Something went wrong.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -54,16 +66,13 @@ export default function AuthPage() {
       
       {/* LEFT SIDE: Aesthetic Fashion Visual (Hidden on mobile) */}
       <div className="hidden lg:flex w-1/2 relative overflow-hidden bg-zinc-900">
-        {/* We use a high-fashion Unsplash placeholder blended with Myntra Pink */}
         <div 
           className="absolute inset-0 bg-cover bg-center mix-blend-luminosity opacity-60 transition-transform duration-[20s] hover:scale-110"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1200&auto=format&fit=crop')" }}
         />
-        {/* Pink/Fuchsia Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[#ff3f6c]/40 to-fuchsia-900/40 mix-blend-overlay" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0a0a0a]/20 to-[#0a0a0a]/90" />
         
-        {/* Branding on the image */}
         <div className="absolute bottom-12 left-12">
           <Link href="/" className="text-3xl font-black tracking-tighter text-white hover:text-[#ff3f6c] transition-colors drop-shadow-lg">
             MYNTRA TRIBES
@@ -74,8 +83,6 @@ export default function AuthPage() {
 
       {/* RIGHT SIDE: The Auth Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
-        
-        {/* Background glow for the form side */}
         <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-[#ff3f6c]/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
@@ -90,8 +97,6 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={handleAuth} className="space-y-5">
-            
-            {/* NAME INPUT (Only shown on Sign Up) */}
             {!isLogin && (
               <div className="space-y-1 animate-in fade-in slide-in-from-top-4 duration-300">
                 <label className="text-xs font-bold tracking-wider uppercase opacity-60">Full Name</label>
@@ -143,7 +148,6 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Toggle Login/Signup */}
           <div className="mt-8 text-center text-sm text-white/50">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
             <button 
