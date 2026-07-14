@@ -34,14 +34,13 @@ const TRIBES = {
   }
 };
 
-// --- DYNAMIC QUESTION BACKGROUNDS ---
 const QUESTION_IMAGES: Record<string, string> = {
   weekend: 'https://images.unsplash.com/photo-1563804447971-6e113ab80713?q=80&w=1200&auto=format&fit=crop',
   colors: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1200&auto=format&fit=crop',
   shoes: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1200&auto=format&fit=crop',
   vacation: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1200&auto=format&fit=crop',
   room: 'https://images.unsplash.com/photo-1618202133208-2907bebba9e1?q=80&w=1200&auto=format&fit=crop',
-  accessory: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?q=80&w=1200&auto=format&fit=crop',
+  accessory: 'https://images.unsplash.com/photo-1515562141207-7a8efd3dc990?q=80&w=1200&auto=format&fit=crop',
 };
 
 const FALLBACK_QUESTIONS = [
@@ -64,11 +63,17 @@ export default function OnboardingPage() {
   const [showManual, setShowManual] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
+  
+  // NEW: Store the revealed tribe before routing
+  const [revealedTribe, setRevealedTribe] = useState<typeof TRIBES['neon-static'] | null>(null);
+
+  // Use live API url or fallback to localhost if not set in Vercel yet
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quiz/questions`);
+        const res = await fetch(`${API_URL}/quiz/questions`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.questions.length > 0) {
@@ -97,33 +102,54 @@ export default function OnboardingPage() {
 
   const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsCalculating(true);
+    let finalSlug: keyof typeof TRIBES = 'neon-static';
+
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tribes/assign`, {
+      const res = await fetch(`${API_URL}/tribes/assign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(finalAnswers)
+        body: JSON.stringify({ answers: finalAnswers }) // Wrapped in answers object just in case
       });
       
-      let assignedTribe;
       if (res.ok) {
         const data = await res.json();
-        assignedTribe = data.assignedTribe;
+        // Bulletproof parsing of backend response
+        finalSlug = data?.assignedTribe?.slug || data?.tribe?.slug || data?.slug || 'neon-static';
       } else {
-        await new Promise(r => setTimeout(r, 1500));
-        assignedTribe = TRIBES['neon-static'].config; 
+        throw new Error("API failed, falling back to local calculation");
       }
-
-      setTribe(assignedTribe.slug, assignedTribe.theme_config || assignedTribe);
-      router.push('/builder');
     } catch (error) {
-      setTribe('neon-static', TRIBES['neon-static'].config);
-      router.push('/builder');
+      // BULLETPROOF FALLBACK: If API fails or structures mismatch, we calculate it perfectly here.
+      const counts = { 'neon-static': 0, 'golden-hour': 0, 'vault-heir': 0 };
+      Object.values(finalAnswers).forEach(ans => {
+        if (ans.includes('Neon') || ans.includes('Purple') || ans.includes('Sneakers') || ans.includes('Tokyo') || ans.includes('LED') || ans.includes('Silver')) counts['neon-static']++;
+        else if (ans.includes('nature') || ans.includes('Cream') || ans.includes('Sandals') || ans.includes('Swiss') || ans.includes('Plants') || ans.includes('Straw')) counts['golden-hour']++;
+        else counts['vault-heir']++;
+      });
+      
+      finalSlug = (Object.keys(counts).reduce((a, b) => counts[a as keyof typeof counts] > counts[b as keyof typeof counts] ? a : b) as keyof typeof TRIBES);
     }
+
+    // Keep the calculation spinner for 2 seconds for dramatic effect
+    await new Promise(r => setTimeout(r, 2000));
+    
+    setIsCalculating(false);
+    
+    // Trigger the Reveal Screen!
+    setRevealedTribe(TRIBES[finalSlug] || TRIBES['neon-static']);
   };
 
+  // If chosen manually, skip the reveal and go straight to builder!
   const manuallyAssignTribe = (slug: keyof typeof TRIBES) => {
     const selected = TRIBES[slug];
     setTribe(selected.slug, selected.config);
+    router.push('/builder');
+  };
+
+  // The final step from the reveal screen
+  const acceptTribeAndContinue = () => {
+    if (!revealedTribe) return;
+    setTribe(revealedTribe.slug, revealedTribe.config);
     router.push('/builder');
   };
 
@@ -131,6 +157,53 @@ export default function OnboardingPage() {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-white/20 border-t-[#ff3f6c] rounded-full animate-spin" />
+      </main>
+    );
+  }
+
+  // --- REVEAL SCREEN ---
+  if (revealedTribe) {
+    return (
+      <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Tribe specific background fade */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ opacity: 0.6, scale: 1 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute inset-0 bg-cover bg-center mix-blend-luminosity"
+          style={{ backgroundImage: `url(${revealedTribe.image})` }}
+        />
+        
+        {/* Tribe specific gradient overlay */}
+        <div 
+          className="absolute inset-0 opacity-80 mix-blend-overlay"
+          style={{ background: `linear-gradient(135deg, ${revealedTribe.colors[0]}, ${revealedTribe.colors[1]})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent" />
+
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="z-10 text-center flex flex-col items-center"
+        >
+          <Sparkles className="w-12 h-12 mb-6" style={{ color: revealedTribe.colors[1] }} />
+          <h3 className="text-white/60 font-bold tracking-[0.3em] uppercase text-sm mb-4">Your Aesthetic Is</h3>
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white mb-6 drop-shadow-2xl">
+            {revealedTribe.name}
+          </h1>
+          <p className="text-xl text-white/80 max-w-md mx-auto mb-12">
+            {revealedTribe.description}
+          </p>
+
+          <button 
+            onClick={acceptTribeAndContinue}
+            className="px-10 py-5 rounded-full font-bold text-lg tracking-wide transition-all hover:scale-105 active:scale-95 shadow-2xl flex items-center gap-3"
+            style={{ backgroundColor: revealedTribe.colors[0], color: revealedTribe.colors[0] === '#1F3A5F' ? '#FFFFFF' : '#000000' }}
+          >
+            Enter the Studio <ArrowRight className="w-5 h-5" />
+          </button>
+        </motion.div>
       </main>
     );
   }
@@ -160,13 +233,10 @@ export default function OnboardingPage() {
               onClick={() => manuallyAssignTribe(tribe.slug as keyof typeof TRIBES)}
               className="group relative h-[400px] rounded-3xl overflow-hidden border border-white/10 hover:border-white/40 transition-all duration-500 text-left"
             >
-              {/* High Fashion Background Image */}
               <div 
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
                 style={{ backgroundImage: `url(${tribe.image})` }}
               />
-              
-              {/* Gradient Overlays for Readability */}
               <div 
                 className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity duration-500 mix-blend-overlay"
                 style={{ background: `linear-gradient(135deg, ${tribe.colors[0]}, ${tribe.colors[1]})` }}
@@ -185,6 +255,7 @@ export default function OnboardingPage() {
     );
   }
 
+  // --- CALCULATING VIEW ---
   if (isCalculating) {
     return (
       <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center text-white">
@@ -197,12 +268,11 @@ export default function OnboardingPage() {
   // --- INTERACTIVE QUIZ VIEW ---
   const currentQ = questions[currentIndex];
   const progress = ((currentIndex) / questions.length) * 100;
-  const bgImage = QUESTION_IMAGES[currentQ.key] || QUESTION_IMAGES['weekend']; // Fallback image
+  const bgImage = QUESTION_IMAGES[currentQ.key] || QUESTION_IMAGES['weekend']; 
 
   return (
     <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      {/* Dynamic Cross-Fading Background */}
       <AnimatePresence mode="wait">
         <motion.div
           key={currentQ.key}
@@ -215,10 +285,8 @@ export default function OnboardingPage() {
         />
       </AnimatePresence>
 
-      {/* Heavy vignette overlay to ensure text is perfectly readable */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/80 via-[#0a0a0a]/60 to-[#0a0a0a] pointer-events-none" />
 
-      {/* Progress Bar */}
       <div className="absolute top-0 left-0 w-full h-1 bg-white/5 z-20">
         <motion.div 
           className="h-full bg-gradient-to-r from-[#ff3f6c] to-fuchsia-500"
