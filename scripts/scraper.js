@@ -1,6 +1,8 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
 const categories = require("./categories");
+// const tribeMap = require("./tribeMap");
+const classifyTribe = require("./utils/tribeClassifier");
 const tribeMap = require("./tribeMap");
 
 const allProducts = [];
@@ -121,32 +123,60 @@ const allProducts = [];
             priceText.replace(/[^\d]/g, "")
           );
 
+          // return {
+          //   myntra_id: myntraId,
+          //   brand,
+          //   name: productName,
+          //   full_name: `${brand} ${productName}`,
+          //   price,
+          //   rating,
+          //   discount,
+          //   image_url: image,
+          //   category: meta.category,
+          //   gender: meta.gender,
+          //   primary_tribe_id: meta.tribeId,
+          //   product_url: link,
+          // };
           return {
-            myntra_id: myntraId,
-            brand,
-            name: productName,
-            full_name: `${brand} ${productName}`,
-            price,
-            rating,
-            discount,
-            image_url: image,
-            category: meta.category,
-            gender: meta.gender,
-            primary_tribe_id: meta.tribeId,
-            product_url: link,
-          };
+  myntra_id: myntraId,
+  brand,
+  name: productName,
+  full_name: `${brand} ${productName}`,
+  price,
+  rating,
+  discount,
+  image_url: image,
+  category: meta.category,
+  gender: meta.gender,
+  product_url: link,
+};
         });
       },
-      {
-        category: cat.category,
-        gender: cat.gender,
-        tribeId: tribeMap[cat.tribe],
-      }
+      
+        // category: cat.category,
+        // gender: cat.gender,
+        // tribeId: tribeMap[cat.tribe],
+        {
+  category: cat.category,
+  gender: cat.gender,
+}
+      
     );
 
     console.log(`Found ${products.length} products`);
+    const enrichedProducts = products.map((product) => {
+  // const tribe = classifyTribe(product.full_name);
+  const tribe = classifyTribe(
+    `${product.brand} ${product.name}`
+);
 
-    const validProducts = products.filter(
+  return {
+    ...product,
+    primary_tribe_id: tribeMap[tribe],
+  };
+});
+
+    const validProducts = enrichedProducts.filter(
       (p) =>
         p.myntra_id &&
         p.image_url &&
