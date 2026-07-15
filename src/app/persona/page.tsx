@@ -56,36 +56,39 @@ export default function PersonaStudio() {
       const jwt = localStorage.getItem('tribe_jwt');
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
       
-      // ⚠️ ADITI'S ENDPOINT GOES HERE 
       const res = await fetch(`${API_URL}/avatars/create`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${jwt}`
         },
+        // 👇 UPDATED: Perfectly matches Aditi's backend schema!
         body: JSON.stringify({
-          gender: gender,
-          body_type: bodyType,
-          hair_color: hairColor,
-          skin_tone: skinTone
+          name: "My Digital Twin", // Backend requires this
+          hair: hairColor,         // Maps to Aditi's 'hair'
+          skin_color: skinTone,    // Maps to Aditi's 'skin_color'
+          body_type: bodyType      // Maps to Aditi's 'body_type'
         })
       });
 
-      let newAvatarId = "mock_avatar_999"; // Fallback ID
+      let newAvatarId = "mock_avatar_999"; 
 
       if (res.ok) {
         const data = await res.json();
         newAvatarId = data.avatar?.id || data.id || newAvatarId;
       } else {
-        console.warn("Backend failed, using mock avatar ID to unblock UI");
-        await new Promise(r => setTimeout(r, 1500)); // Mock delay
+        const errorData = await res.json();
+        console.warn("Backend failed:", errorData.message);
+        await new Promise(r => setTimeout(r, 1500)); // Mock delay if backend fails
       }
 
-      // Save to Zustand
+      // Save to Zustand! 
       setAvatarId(newAvatarId);
-      setUserGender(gender); // This tells the catalog what clothes to load!
       
-      // Route to the builder!
+      // We STILL save gender locally so your catalog can filter products beautifully!
+      setUserGender(gender); 
+      
+      // Success! Route to the builder.
       router.push('/builder');
 
     } catch (error) {

@@ -31,13 +31,15 @@ const create = async (req, res) => {
         message:"All avatar fields are required"
     });
 }
-    const avatar = await createAvatar({
 
-      userId: req.user.id,
+      const avatar = await createAvatar({
+  userId: req.user.id,
+  name,
+  hair,
+  skin_color,
+  body_type
+});
 
-      name,
-
-    });
 
     return res.status(201).json({
 
