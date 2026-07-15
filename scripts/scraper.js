@@ -4,6 +4,7 @@ const categories = require("./categories");
 // const tribeMap = require("./tribeMap");
 const classifyTribe = require("./utils/tribeClassifier");
 const tribeMap = require("./tribeMap");
+const generateTags = require("./utils/tagGenerator");
 
 const allProducts = [];
 
@@ -137,7 +138,20 @@ const allProducts = [];
           //   primary_tribe_id: meta.tribeId,
           //   product_url: link,
           // };
-          return {
+//           return {
+//   myntra_id: myntraId,
+//   brand,
+//   name: productName,
+//   full_name: `${brand} ${productName}`,
+//   price,
+//   rating,
+//   discount,
+//   image_url: image,
+//   category: meta.category,
+//   gender: meta.gender,
+//   product_url: link,
+// };
+return {
   myntra_id: myntraId,
   brand,
   name: productName,
@@ -164,15 +178,29 @@ const allProducts = [];
     );
 
     console.log(`Found ${products.length} products`);
-    const enrichedProducts = products.map((product) => {
-  // const tribe = classifyTribe(product.full_name);
-  const tribe = classifyTribe(
-    `${product.brand} ${product.name}`
-);
+//     const enrichedProducts = products.map((product) => {
+//   // const tribe = classifyTribe(product.full_name);
+//   const tribe = classifyTribe(
+//     `${product.brand} ${product.name}`
+// );
+
+//   return {
+//     ...product,
+//     primary_tribe_id: tribeMap[tribe],
+//   };
+// });
+const enrichedProducts = products.map((product) => {
+  // Use brand + category + name for better tribe classification
+  const searchableText = `${product.brand} ${product.category} ${product.name}`;
+
+  const tribe = classifyTribe(searchableText);
+
+  const tags = generateTags(searchableText);
 
   return {
     ...product,
     primary_tribe_id: tribeMap[tribe],
+    tags,
   };
 });
 

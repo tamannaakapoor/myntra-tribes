@@ -36,6 +36,16 @@ const getProductsByCategory = async (category, page = 1, limit = 20) => {
 };
 
 // Search
+// const searchProducts = async (search, page = 1, limit = 20) => {
+//   const from = (page - 1) * limit;
+//   const to = from + limit - 1;
+
+//   return await supabase
+//     .from("products")
+//     .select("*", { count: "exact" })
+//     .ilike("full_name", `%${search}%`)
+//     .range(from, to);
+// };
 const searchProducts = async (search, page = 1, limit = 20) => {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -43,7 +53,9 @@ const searchProducts = async (search, page = 1, limit = 20) => {
   return await supabase
     .from("products")
     .select("*", { count: "exact" })
-    .ilike("full_name", `%${search}%`)
+    .or(
+      `full_name.ilike.%${search}%,name.ilike.%${search}%,brand.ilike.%${search}%,category.ilike.%${search}%,tags.cs.{${search}}`
+    )
     .range(from, to);
 };
 
