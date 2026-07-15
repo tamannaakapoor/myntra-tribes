@@ -143,14 +143,14 @@ export default function OnboardingPage() {
   const manuallyAssignTribe = (slug: keyof typeof TRIBES) => {
     const selected = TRIBES[slug];
     setTribe(selected.slug, selected.config);
-    router.push('/builder');
+    router.push('/persona');
   };
 
   // The final step from the reveal screen
   const acceptTribeAndContinue = () => {
     if (!revealedTribe) return;
     setTribe(revealedTribe.slug, revealedTribe.config);
-    router.push('/builder');
+    router.push('/persona');
   };
 
   if (isLoadingQuestions) {
