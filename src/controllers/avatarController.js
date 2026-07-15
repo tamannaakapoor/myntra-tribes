@@ -7,6 +7,7 @@ const create = async (req, res) => {
     // const { name } = req.body;
     const {
     name,
+    gender,
     hair,
     skin_color,
     body_type
@@ -20,6 +21,7 @@ const create = async (req, res) => {
     // }
     if (
     !name ||
+    !gender ||
     !hair ||
     !skin_color ||
     !body_type
