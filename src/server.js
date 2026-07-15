@@ -5,7 +5,7 @@ const cors = require("cors");
 const app = require("./app");
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: "*", // <-- Allows your Vercel frontend to connect!
   credentials: true,
 }));
 
