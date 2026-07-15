@@ -40,7 +40,7 @@ const QUESTION_IMAGES: Record<string, string> = {
   shoes: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=1200&auto=format&fit=crop',
   vacation: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1200&auto=format&fit=crop',
   room: 'https://images.unsplash.com/photo-1618202133208-2907bebba9e1?q=80&w=1200&auto=format&fit=crop',
-  accessory: 'https://images.unsplash.com/photo-1515562141207-7a8efd3dc990?q=80&w=1200&auto=format&fit=crop',
+  accessory: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?q=80&w=1200&auto=format&fit=crop',
 };
 
 const FALLBACK_QUESTIONS = [

@@ -21,8 +21,11 @@ interface TribeState {
   currentTribe: TribeType;
   themeConfig: ThemeConfig;
   avatarId: string | null;
+  userGender: string | null;
+
   setTribe: (tribe: TribeType, config?: ThemeConfig) => void;
   setAvatarId: (id: string) => void;
+  setUserGender: (gender: string) => void;
 }
 
 const defaultTheme: ThemeConfig = {
@@ -46,11 +49,14 @@ export const useTribeStore = create<TribeState>()(
       currentTribe: 'default',
       themeConfig: defaultTheme,
       avatarId: null,
+      userGender: null,
+
       setTribe: (tribe, config) => set((state) => ({ 
         currentTribe: tribe, 
         themeConfig: config || state.themeConfig 
       })),
       setAvatarId: (id) => set({ avatarId: id }),
+      setUserGender: (gender) => set({ userGender: gender }),
     }),
     {
       name: 'tribe-storage', // This is the key it saves under in localStorage
