@@ -35,24 +35,19 @@ const createAvatar = async (req, res) => {
       body_type,
     });
 
-    // return res.status(201).json({
-    //   success: true,
-    //   message: "Avatar created successfully",
-    //   avatar,
-    // });
     return res.status(201).json({
-  success: true,
-  message: "Avatar created successfully",
-  avatar: {
-    id: avatar.id,
-    user_id: avatar.user_id,
-    name: avatar.name,
-    gender: avatar.gender,
-    hair: avatar.hair,
-    skin_color: avatar.skin_color,
-    body_type: avatar.body_type,
-  },
-});
+      success: true,
+      message: "Avatar created successfully",
+      avatar: {
+        id: avatar.id,
+        user_id: avatar.user_id,
+        name: avatar.name,
+        gender: avatar.gender,
+        hair: avatar.hair,
+        skin_color: avatar.skin_color,
+        body_type: avatar.body_type,
+      },
+    });
 
   } catch (err) {
     console.error(err);

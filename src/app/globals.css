@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --color-theme-bg: var(--bg-primary);
+  --color-theme-text: var(--text-main);
+  --color-theme-accent: var(--accent);
+}
+
+/* Default / Unassigned */
+:root {
+  --bg-primary: #ffffff;
+  --text-main: #111111;
+  --accent: #ff3f6c; /* Myntra Pink */
+}
+
+/* Tribe 1: Golden Hour (From DB: Cottagecore x Soft Girl) */
+.theme-golden-hour {
+  --bg-primary: #FFF8EE; 
+  --text-main: #4B3A2F; 
+  --accent: #A3B18A; 
+}
+
+/* Tribe 2: Neon Static (From DB: Cyberpunk x Y2K) */
+.theme-neon-static {
+  --bg-primary: #0B0B0B;
+  --text-main: #FFFFFF; 
+  --accent: #39FF14; 
+}
+
+/* Tribe 3: Vault Heir (From DB: Old Money x Quiet Luxury) */
+.theme-vault-heir {
+  --bg-primary: #FFFFFF;
+  --text-main: #1F3A5F;
+  --accent: #355070; 
+}
+
+/* Ensures the transition between tribes is incredibly smooth */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: background-color 0.6s ease-out, color 0.6s ease-out;
+}

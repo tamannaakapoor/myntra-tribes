@@ -1,0 +1,236 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { useTribeStore } from '@/store/useTribeStore';
+
+// --- DYNAMIC 2D AVATAR COMPONENT ---
+function FemaleAvatar2D({ skinTone, hairStyle, bodyType }: { skinTone: string, hairStyle: string, bodyType: string }) {
+  // Map body types to pixel widths for the dress
+  const bodyWidth = 
+    bodyType === 'Slim' ? 70 : 
+    bodyType === 'Athletic' ? 85 : 
+    bodyType === 'Curvy' ? 105 : 125;
+
+  return (
+    <svg viewBox="0 0 200 300" className="w-full h-full max-w-[300px] drop-shadow-sm">
+      <defs>
+        <linearGradient id="dressGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ff4d79" />
+          <stop offset="100%" stopColor="#ff99b3" />
+        </linearGradient>
+      </defs>
+
+      {/* --- HAIR (BACK LAYER) --- */}
+      {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
+      {hairStyle === 'Curly' && (
+        <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />
+      )}
+
+      {/* --- LEGS --- */}
+      <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
+      <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
+
+      {/* --- SHOES --- */}
+      <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" />
+      <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" />
+
+      {/* --- NECK --- */}
+      <rect x="92" y="110" width="16" height="20" fill={skinTone} />
+
+      {/* --- DRESS / BODY --- */}
+      <path 
+        d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} 
+        fill="url(#dressGrad)" 
+      />
+
+      {/* --- HEAD --- */}
+      <circle cx="100" cy="80" r="38" fill={skinTone} />
+
+      {/* --- FACE DETAILS --- */}
+      {/* Eyes */}
+      <circle cx="85" cy="80" r="3.5" fill="#111111" />
+      <circle cx="115" cy="80" r="3.5" fill="#111111" />
+      
+      {/* Cheeks */}
+      <circle cx="72" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      <circle cx="128" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      
+      {/* Smile */}
+      <path d="M 92 92 Q 100 100 108 92" stroke="#ff4d79" strokeWidth="2.5" fill="transparent" strokeLinecap="round" />
+
+      {/* --- HAIR (FRONT BANGS) --- */}
+      {hairStyle !== 'Buzz' && (
+        <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />
+      )}
+      {hairStyle === 'Buzz' && (
+        <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />
+      )}
+    </svg>
+  );
+}
+
+export default function PersonaPage() {
+  const router = useRouter();
+  
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [avatarState, setAvatarState] = useState({
+    name: 'My Avatar',
+    gender: 'female', 
+    body_type: 'Slim',
+    hair: 'Long',
+    skin_color: '#F3D9C6'
+  });
+
+  const skinTones = ['#F5D0C5', '#F3D9C6', '#C29270', '#8A5A44', '#4A2E2B'];
+  const bodyTypes = ['Slim', 'Athletic', 'Curvy', 'Plus'];
+  const hairStyles = ['Long', 'Bob', 'Bun', 'Curly', 'Buzz'];
+
+  const handleSave = async () => {
+    setIsLoading(true);
+
+  
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      const token = localStorage.getItem('tribe_jwt');
+
+      const response = await fetch(`${API_URL}/avatar/create`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(avatarState)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        router.push('/dashboard');
+      } else {
+        console.error("Failed to save avatar:", data.message);
+        alert(data.message || "Failed to save avatar");
+      }
+    } catch (error) {
+      console.error("API error:", error);
+      router.push('/dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[#FFF5F8] px-6 py-10 md:px-12 md:py-16 font-sans text-[#111111]">
+      <div className="max-w-[1200px] mx-auto">
+        
+        <button 
+          onClick={() => router.back()} 
+          className="flex items-center gap-2 text-sm font-medium mb-8 hover:text-[#ff3f6c] transition-colors w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2 block text-[#ff3f6c]">
+          Avatar Studio
+        </span>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-12" style={{ fontFamily: 'Georgia, serif' }}>
+          Design your avatar
+        </h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          
+          {/* LEFT: 2D AVATAR PREVIEW */}
+          <div className="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#FBCFE8]/30 aspect-square relative overflow-hidden flex items-center justify-center">
+            <FemaleAvatar2D 
+              skinTone={avatarState.skin_color} 
+              hairStyle={avatarState.hair} 
+              bodyType={avatarState.body_type} 
+            />
+          </div>
+
+          {/* RIGHT: CUSTOMIZATION CONTROLS */}
+          <div className="flex flex-col gap-10 justify-center max-w-md">
+            
+            {/* BODY Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Body</h3>
+              <div className="flex flex-wrap items-center gap-3">
+                {bodyTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setAvatarState({ ...avatarState, body_type: type })}
+                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
+                      avatarState.body_type === type 
+                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
+                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* HAIR Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Hair</h3>
+              <div className="flex flex-wrap items-center gap-3">
+                {hairStyles.map(style => (
+                  <button
+                    key={style}
+                    onClick={() => setAvatarState({ ...avatarState, hair: style })}
+                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
+                      avatarState.hair === style 
+                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
+                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
+                    }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SKIN TONE Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Skin Tone</h3>
+              <div className="flex flex-wrap items-center gap-4">
+                {skinTones.map(hex => (
+                  <button
+                    key={hex}
+                    onClick={() => setAvatarState({ ...avatarState, skin_color: hex })}
+                    className={`w-12 h-12 rounded-full transition-all border-4 ${
+                      avatarState.skin_color === hex 
+                        ? 'border-[#ff3f6c] scale-110 shadow-md' 
+                        : 'border-transparent hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: hex }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* SAVE BUTTON */}
+            <button 
+              onClick={handleSave}
+              disabled={isLoading}
+              className="mt-6 w-full py-4 rounded-full font-bold text-white bg-[#ff3f6c] hover:bg-[#E11D48] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex justify-center items-center gap-2"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>Save avatar <span className="text-lg leading-none font-light">→</span></>
+              )}
+            </button>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
