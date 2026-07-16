@@ -42,7 +42,12 @@ const authRoutes = require("./routes/authRoutes");
 const avatarRoutes = require("./routes/avatarRoutes");
 const quizRoutes = require("./routes/quizRoutes");
 const userRoutes = require("./routes/userRoutes");
+const leaderboardRoutes =require("./routes/leaderboardRoutes");
 
+app.use(
+  "/api/leaderboard",
+  leaderboardRoutes
+);
 app.use("/api/user", userRoutes);
 app.use("/api/lookbooks", lookbookRoutes);
 app.use("/api/quiz", quizRoutes);
