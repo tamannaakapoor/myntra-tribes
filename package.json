@@ -13,6 +13,8 @@
     "start:backend": "node src/server.js"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.6.1",
     "@supabase/supabase-js": "^2.x",
     "cors": "^2.x",
     "csv-writer": "^1.6.0",
@@ -24,6 +26,7 @@
     "playwright": "^1.61.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "three": "^0.185.1",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
