@@ -1,49 +1,52 @@
-const { saveLookbook } = require("../services/lookbookService");
+const {
+  getAvatarByUserId,
+  createLookbook,
+  addLookbookItems,
+    getMyLookbooks,
+      getLookbookById,
 
-const createLookbook = async (req, res) => {
+
+} = require("../services/lookbookService");
+
+// POST /api/lookbooks
+const create = async (req, res) => {
   try {
+    const { title, description, tags, products } = req.body;
 
-    const {
-      avatarId,
-      title,
-      description,
-      tags,
-      items,
-    } = req.body;
-if (tags && !Array.isArray(tags)) {
-    return res.status(400).json({
+    // Validate input
+    if (!title || !products || products.length === 0) {
+      return res.status(400).json({
         success: false,
-        message: "tags must be an array",
-    });
+        message: "Title and products are required",
+      });
+    }
+
+    // Find logged-in user's avatar
+    const avatar = await getAvatarByUserId(req.user.id);
+
+    // if (!avatar) {
+    //   return res.status(404).json({
+    //     success: false,
+    //     message: "Avatar not found",
+    //   });
+    // }
+    if (!avatar) {
+  return res.status(404).json({
+    success: false,
+    message: "Please create an avatar first",
+  });
 }
-    if (!avatarId) {
-      return res.status(400).json({
-        success: false,
-        message: "avatarId is required",
-      });
-    }
 
-    if (!title) {
-      return res.status(400).json({
-        success: false,
-        message: "title is required",
-      });
-    }
-
-    if (!items || items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "At least one product is required",
-      });
-    }
-
-    const lookbook = await saveLookbook({
-      avatarId,
+    // Create lookbook
+    const lookbook = await createLookbook({
+      avatarId: avatar.id,
       title,
       description,
-      tags,
-      items,
+      tags: tags || [],
     });
+
+    // Save selected products
+    await addLookbookItems(lookbook.id, products);
 
     return res.status(201).json({
       success: true,
@@ -52,17 +55,62 @@ if (tags && !Array.isArray(tags)) {
     });
 
   } catch (err) {
-
     console.error(err);
 
     return res.status(500).json({
       success: false,
       message: err.message,
     });
-
   }
 };
 
+const getMine = async (req, res) => {
+  try {
+    const lookbooks = await getMyLookbooks(req.user.id);
+
+    return res.status(200).json({
+      success: true,
+      count: lookbooks.length,
+      lookbooks,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+const getById = async (req, res) => {
+  try {
+    const lookbook = await getLookbookById(req.params.id);
+
+    if (!lookbook) {
+      return res.status(404).json({
+        success: false,
+        message: "Lookbook not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      lookbook,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 module.exports = {
-  createLookbook,
+  create,
+  getMine,
+  getById,
 };

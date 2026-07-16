@@ -9,7 +9,6 @@ const csvWriter = createCsvWriter({
     path: "./scripts/output/products.csv",
 
     header: [
-
         { id: "myntra_id", title: "myntra_id" },
 
         { id: "brand", title: "brand" },
@@ -36,15 +35,24 @@ const csvWriter = createCsvWriter({
 
         { id: "color", title: "color" },
 
-        { id: "primary_tribe_id", title: "primary_tribe_id" }
+        { id: "primary_tribe_id", title: "primary_tribe_id" },
+                { id: "tags", title: "tags" },
+
 
     ]
 
 });
 
-csvWriter.writeRecords(products)
+// csvWriter.writeRecords(products)
+const csvProducts = products.map((product) => ({
+  ...product,
+  tags: `{${product.tags.join(",")}}`,
+}));
+
+csvWriter.writeRecords(csvProducts)
 .then(() => {
 
     console.log("CSV Created Successfully");
 
 });
+

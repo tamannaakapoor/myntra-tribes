@@ -19,11 +19,14 @@ const visionRoutes = require("./routes/visionRoutes");
 const authRoutes = require("./routes/authRoutes");
 const avatarRoutes = require("./routes/avatarRoutes");
 const quizRoutes = require("./routes/quizRoutes");
+const userRoutes = require("./routes/userRoutes");
 
+app.use("/api/user", userRoutes);
+app.use("/api/lookbooks", lookbookRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/avatars", avatarRoutes);
+app.use("/api/avatar", avatarRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/lookbooks", lookbookRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/vision", visionRoutes);
 
