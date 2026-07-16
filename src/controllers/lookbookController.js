@@ -4,7 +4,7 @@ const {
   addLookbookItems,
     getMyLookbooks,
       getLookbookById,
-
+     getFeed: getFeedService,
 
 } = require("../services/lookbookService");
 
@@ -109,8 +109,31 @@ const getById = async (req, res) => {
     });
   }
 };
+
+const getFeed = async (req, res) => {
+  try {
+    const { tribe } = req.query;
+
+    const lookbooks = await getFeedService(tribe);
+
+    return res.status(200).json({
+      success: true,
+      count: lookbooks.length,
+      lookbooks,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 module.exports = {
   create,
   getMine,
   getById,
+  getFeed,
 };
