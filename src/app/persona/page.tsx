@@ -1,236 +1,235 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { useTribeStore } from '@/store/useTribeStore';
-import { Check, ChevronRight } from 'lucide-react';
 
-const GENDERS = [
-  { id: 'female', label: 'Womenswear', desc: 'Curated feminine & unisex fits' },
-  { id: 'male', label: 'Menswear', desc: 'Curated masculine & unisex fits' },
-  { id: 'neutral', label: 'Fluid', desc: 'The complete unfiltered catalog' }
-];
+// --- DYNAMIC 2D AVATAR COMPONENT ---
+function FemaleAvatar2D({ skinTone, hairStyle, bodyType }: { skinTone: string, hairStyle: string, bodyType: string }) {
+  // Map body types to pixel widths for the dress
+  const bodyWidth = 
+    bodyType === 'Slim' ? 70 : 
+    bodyType === 'Athletic' ? 85 : 
+    bodyType === 'Curvy' ? 105 : 125;
 
-const BODY_TYPES = [
-  { id: 'slim', label: 'Slim / Petite' },
-  { id: 'athletic', label: 'Athletic / Toned' },
-  { id: 'curvy', label: 'Curvy / Mid-Size' },
-  { id: 'plus', label: 'Plus / Broad' }
-];
+  return (
+    <svg viewBox="0 0 200 300" className="w-full h-full max-w-[300px] drop-shadow-sm">
+      <defs>
+        <linearGradient id="dressGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ff4d79" />
+          <stop offset="100%" stopColor="#ff99b3" />
+        </linearGradient>
+      </defs>
 
-const HAIR_COLORS = [
-  { id: 'black', hex: '#0a0a0a' }, { id: 'dark-brown', hex: '#2C1B18' },
-  { id: 'light-brown', hex: '#5C3A21' }, { id: 'blonde', hex: '#E5C07B' },
-  { id: 'red', hex: '#8B1E09' }, { id: 'silver', hex: '#D1D5DB' },
-  { id: 'pink', hex: '#ff3f6c' }, { id: 'blue', hex: '#2563EB' }
-];
+      {/* --- HAIR (BACK LAYER) --- */}
+      {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
+      {hairStyle === 'Curly' && (
+        <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />
+      )}
 
-const SKIN_TONES = [
-  { id: 'tone-1', hex: '#FDF1E6' }, { id: 'tone-2', hex: '#F3D9C6' },
-  { id: 'tone-3', hex: '#E0B594' }, { id: 'tone-4', hex: '#C68E65' },
-  { id: 'tone-5', hex: '#9E643C' }, { id: 'tone-6', hex: '#713F21' },
-  { id: 'tone-7', hex: '#4A2511' }, { id: 'tone-8', hex: '#2B1408' }
-];
+      {/* --- LEGS --- */}
+      <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
+      <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
 
-export default function PersonaStudio() {
-  const router = useRouter();
-  const { setAvatarId, setUserGender } = useTribeStore();
-  
-  const [step, setStep] = useState(1);
-  const [isGenerating, setIsGenerating] = useState(false);
-  
-  // Selection State
-  const [gender, setGender] = useState('');
-  const [bodyType, setBodyType] = useState('');
-  const [hairColor, setHairColor] = useState('');
-  const [skinTone, setSkinTone] = useState('');
+      {/* --- SHOES --- */}
+      <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" />
+      <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" />
 
-  const handleNext = () => setStep(s => Math.min(s + 1, 4));
-  const handleBack = () => setStep(s => Math.max(s - 1, 1));
+      {/* --- NECK --- */}
+      <rect x="92" y="110" width="16" height="20" fill={skinTone} />
 
- const handleGenerate = async () => {
-    setIsGenerating(true);
-    
-    try {
-      const jwt = localStorage.getItem('tribe_jwt');
-      // Force it to use the Render URL if the env var isn't catching
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      {/* --- DRESS / BODY --- */}
+      <path 
+        d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} 
+        fill="url(#dressGrad)" 
+      />
+
+      {/* --- HEAD --- */}
+      <circle cx="100" cy="80" r="38" fill={skinTone} />
+
+      {/* --- FACE DETAILS --- */}
+      {/* Eyes */}
+      <circle cx="85" cy="80" r="3.5" fill="#111111" />
+      <circle cx="115" cy="80" r="3.5" fill="#111111" />
       
-      const res = await fetch(`${API_URL}/avatars/create`, {
-        method: 'POST',
+      {/* Cheeks */}
+      <circle cx="72" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      <circle cx="128" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      
+      {/* Smile */}
+      <path d="M 92 92 Q 100 100 108 92" stroke="#ff4d79" strokeWidth="2.5" fill="transparent" strokeLinecap="round" />
+
+      {/* --- HAIR (FRONT BANGS) --- */}
+      {hairStyle !== 'Buzz' && (
+        <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />
+      )}
+      {hairStyle === 'Buzz' && (
+        <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />
+      )}
+    </svg>
+  );
+}
+
+export default function PersonaPage() {
+  const router = useRouter();
+  
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [avatarState, setAvatarState] = useState({
+    name: 'My Avatar',
+    gender: 'female', 
+    body_type: 'Slim',
+    hair: 'Long',
+    skin_color: '#F3D9C6'
+  });
+
+  const skinTones = ['#F5D0C5', '#F3D9C6', '#C29270', '#8A5A44', '#4A2E2B'];
+  const bodyTypes = ['Slim', 'Athletic', 'Curvy', 'Plus'];
+  const hairStyles = ['Long', 'Bob', 'Bun', 'Curly', 'Buzz'];
+
+  const handleSave = async () => {
+    setIsLoading(true);
+
+  
+
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      const token = localStorage.getItem('tribe_jwt');
+
+      const response = await fetch(`${API_URL}/avatar/create`, {
+        method: "POST",
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwt}`
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
         },
-        body: JSON.stringify({
-          name: "My Digital Twin",
-          hair: hairColor,         
-          skin_color: skinTone,    
-          body_type: bodyType,
-          gender: gender           
-        })
+        body: JSON.stringify(avatarState)
       });
 
-      let newAvatarId = "mock_avatar_999"; 
+      const data = await response.json();
 
-      if (res.ok) {
-        const data = await res.json();
-        newAvatarId = data.avatar?.id || data.id || newAvatarId;
+      if (data.success) {
+        router.push('/dashboard');
       } else {
-        const errData = await res.json();
-        console.warn("Backend returned error:", errData.message);
+        console.error("Failed to save avatar:", data.message);
+        alert(data.message || "Failed to save avatar");
       }
-
-      setAvatarId(newAvatarId);
-      setUserGender(gender); 
-      router.push('/builder');
-
     } catch (error) {
-      // 🛡️ BULLETPROOF FALLBACK: If the fetch fails entirely (like Connection Refused)
-      console.warn("Backend unavailable. Bypassing with mock avatar to unblock UI.");
-      
-      // We still save the gender so your Catalog works!
-      setAvatarId("mock_avatar_999_fallback");
-      setUserGender(gender); 
-      
-      // Route to builder anyway!
-      router.push('/builder');
+      console.error("API error:", error);
+      router.push('/dashboard');
     } finally {
-      setIsGenerating(false);
+      setIsLoading(false);
     }
   };
 
-  const isStepValid = () => {
-    if (step === 1) return gender !== '';
-    if (step === 2) return bodyType !== '';
-    if (step === 3) return hairColor !== '';
-    if (step === 4) return skinTone !== '';
-    return false;
-  };
-
   return (
-    <main className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-6 relative overflow-hidden text-white">
-      
-      {/* Cinematic Spotlight */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[var(--accent)]/10 rounded-full blur-[150px] pointer-events-none opacity-60 mix-blend-screen" />
-
-      <div className="w-full max-w-2xl relative z-10 flex flex-col h-[600px]">
+    <main className="min-h-screen bg-[#FFF5F8] px-6 py-10 md:px-12 md:py-16 font-sans text-[#111111]">
+      <div className="max-w-[1200px] mx-auto">
         
-        {/* Header & Progress */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-8">
-            {step > 1 ? (
-              <button onClick={handleBack} className="text-white/50 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
-                ← Back
-              </button>
-            ) : <div />}
-            <span className="text-[var(--accent)] font-bold tracking-widest text-xs uppercase">
-              Step {step} of 4
-            </span>
-          </div>
+        <button 
+          onClick={() => router.back()} 
+          className="flex items-center gap-2 text-sm font-medium mb-8 hover:text-[#ff3f6c] transition-colors w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        
+        <span className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2 block text-[#ff3f6c]">
+          Avatar Studio
+        </span>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-12" style={{ fontFamily: 'Georgia, serif' }}>
+          Design your avatar
+        </h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           
-          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-            <motion.div 
-              className="h-full bg-[var(--accent)]"
-              initial={{ width: 0 }}
-              animate={{ width: `${(step / 4) * 100}%` }}
-              transition={{ duration: 0.4 }}
+          {/* LEFT: 2D AVATAR PREVIEW */}
+          <div className="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#FBCFE8]/30 aspect-square relative overflow-hidden flex items-center justify-center">
+            <FemaleAvatar2D 
+              skinTone={avatarState.skin_color} 
+              hairStyle={avatarState.hair} 
+              bodyType={avatarState.body_type} 
             />
           </div>
-        </div>
 
-        {/* Step Content Area */}
-        <div className="flex-grow relative">
-          <AnimatePresence mode="wait">
+          {/* RIGHT: CUSTOMIZATION CONTROLS */}
+          <div className="flex flex-col gap-10 justify-center max-w-md">
             
-            {/* STEP 1: GENDER */}
-            {step === 1 && (
-              <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-2">Who are you dressing?</h2>
-                <p className="text-white/50 mb-8">This determines the catalog you'll pull from.</p>
-                <div className="grid gap-4">
-                  {GENDERS.map(g => (
-                    <button key={g.id} onClick={() => setGender(g.id)} className={`p-6 rounded-2xl border text-left transition-all ${gender === g.id ? 'bg-white/10 border-[var(--accent)]' : 'bg-white/5 border-white/10 hover:border-white/30'}`}>
-                      <h3 className="text-xl font-bold">{g.label}</h3>
-                      <p className="text-white/50 text-sm mt-1">{g.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            {/* BODY Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Body</h3>
+              <div className="flex flex-wrap items-center gap-3">
+                {bodyTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setAvatarState({ ...avatarState, body_type: type })}
+                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
+                      avatarState.body_type === type 
+                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
+                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            {/* STEP 2: BODY TYPE */}
-            {step === 2 && (
-              <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-2">Select your build.</h2>
-                <p className="text-white/50 mb-8">To ensure your digital twin models fits perfectly.</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {BODY_TYPES.map(b => (
-                    <button key={b.id} onClick={() => setBodyType(b.id)} className={`p-8 rounded-2xl border text-center transition-all ${bodyType === b.id ? 'bg-white/10 border-[var(--accent)]' : 'bg-white/5 border-white/10 hover:border-white/30'}`}>
-                      <h3 className="text-lg font-bold">{b.label}</h3>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            {/* HAIR Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Hair</h3>
+              <div className="flex flex-wrap items-center gap-3">
+                {hairStyles.map(style => (
+                  <button
+                    key={style}
+                    onClick={() => setAvatarState({ ...avatarState, hair: style })}
+                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
+                      avatarState.hair === style 
+                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
+                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
+                    }`}
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            {/* STEP 3: HAIR COLOR */}
-            {step === 3 && (
-              <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-8">Hair color.</h2>
-                <div className="grid grid-cols-4 gap-6">
-                  {HAIR_COLORS.map(h => (
-                    <button key={h.id} onClick={() => setHairColor(h.hex)} className={`relative aspect-square rounded-full flex items-center justify-center transition-all ${hairColor === h.hex ? 'scale-110 ring-2 ring-white ring-offset-4 ring-offset-[#0a0a0a]' : 'hover:scale-105'}`} style={{ backgroundColor: h.hex }}>
-                      {hairColor === h.hex && <Check className="w-6 h-6 text-white drop-shadow-md mix-blend-difference" />}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+            {/* SKIN TONE Toggles */}
+            <div>
+              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Skin Tone</h3>
+              <div className="flex flex-wrap items-center gap-4">
+                {skinTones.map(hex => (
+                  <button
+                    key={hex}
+                    onClick={() => setAvatarState({ ...avatarState, skin_color: hex })}
+                    className={`w-12 h-12 rounded-full transition-all border-4 ${
+                      avatarState.skin_color === hex 
+                        ? 'border-[#ff3f6c] scale-110 shadow-md' 
+                        : 'border-transparent hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: hex }}
+                  />
+                ))}
+              </div>
+            </div>
 
-            {/* STEP 4: SKIN TONE */}
-            {step === 4 && (
-              <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col h-full">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-8">Skin tone.</h2>
-                <div className="grid grid-cols-4 gap-6">
-                  {SKIN_TONES.map(s => (
-                    <button key={s.id} onClick={() => setSkinTone(s.hex)} className={`relative aspect-square rounded-full flex items-center justify-center transition-all ${skinTone === s.hex ? 'scale-110 ring-2 ring-white ring-offset-4 ring-offset-[#0a0a0a]' : 'hover:scale-105'}`} style={{ backgroundColor: s.hex }}>
-                      {skinTone === s.hex && <Check className="w-6 h-6 text-black/50 drop-shadow-md" />}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="pt-8 border-t border-white/10 mt-auto">
-          {step < 4 ? (
+            {/* SAVE BUTTON */}
             <button 
-              onClick={handleNext} 
-              disabled={!isStepValid()}
-              className="w-full py-4 rounded-xl font-bold tracking-wide transition-all bg-white text-black hover:bg-white/90 disabled:opacity-30 disabled:hover:bg-white flex items-center justify-center gap-2"
+              onClick={handleSave}
+              disabled={isLoading}
+              className="mt-6 w-full py-4 rounded-full font-bold text-white bg-[#ff3f6c] hover:bg-[#E11D48] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex justify-center items-center gap-2"
             >
-              Continue <ChevronRight className="w-5 h-5" />
-            </button>
-          ) : (
-            <button 
-              onClick={handleGenerate} 
-              disabled={!isStepValid() || isGenerating}
-              className="w-full py-4 rounded-xl font-bold tracking-wide transition-all bg-[var(--accent)] text-[var(--bg-primary)] hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center shadow-[0_0_40px_var(--accent)] shadow-[var(--accent)]/30"
-            >
-              {isGenerating ? (
-                <div className="w-6 h-6 border-2 border-[var(--bg-primary)]/30 border-t-[var(--bg-primary)] rounded-full animate-spin" />
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                "Generate Digital Twin"
+                <>Save avatar <span className="text-lg leading-none font-light">→</span></>
               )}
             </button>
-          )}
-        </div>
 
+          </div>
+        </div>
       </div>
     </main>
   );
