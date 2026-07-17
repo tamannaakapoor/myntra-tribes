@@ -43,7 +43,9 @@ const avatarRoutes = require("./routes/avatarRoutes");
 const quizRoutes = require("./routes/quizRoutes");
 const userRoutes = require("./routes/userRoutes");
 const leaderboardRoutes =require("./routes/leaderboardRoutes");
+const aiRoutes = require("./routes/aiRoutes");
 
+app.use("/api/ai", aiRoutes);
 app.use(
   "/api/leaderboard",
   leaderboardRoutes

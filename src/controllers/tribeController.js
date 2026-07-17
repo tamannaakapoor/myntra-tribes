@@ -5,72 +5,155 @@ const supabase = require("../config/supabase");
 // POST /api/tribes/assign
 const assignUserTribe = async (req, res) => {
   try {
-    const answers = req.body;
+//     const answers = req.body;
 
-    // Validate required quiz fields
-    const requiredFields = [
-      "weekend",
-      "colors",
-      "shoes",
-      "vacation",
-      "room",
-      "accessory",
-    ];
+//     // Validate required quiz fields
+//     const requiredFields = [
+//       "weekend",
+//       "colors",
+//       "shoes",
+//       "vacation",
+//       "room",
+//       "accessory",
+//     ];
 
    
-    const validOptions = {
-  weekend: [
-    "Rooftop rave in Tokyo",
-    "Cozy café with a book",
-    "Country Club Brunch"
-  ],
+//     const validOptions = {
+//   weekend: [
+//     "Rooftop rave in Tokyo",
+//     "Cozy café with a book",
+//     "Country Club Brunch"
+//   ],
 
-  colors: [
-    "Electric Purple & Chrome",
-    "Cream & Sage",
-    "Navy & Camel"
-  ],
+//   colors: [
+//     "Electric Purple & Chrome",
+//     "Cream & Sage",
+//     "Navy & Camel"
+//   ],
 
-  shoes: [
-    "Chunky Sneakers",
-    "Canvas Sandals",
-    "Leather Loafers"
-  ],
+//   shoes: [
+//     "Chunky Sneakers",
+//     "Canvas Sandals",
+//     "Leather Loafers"
+//   ],
 
-  vacation: [
-    "Seoul Nightlife",
-    "Countryside Cottage",
-    "Swiss Alps Resort"
-  ],
+//   vacation: [
+//     "Seoul Nightlife",
+//     "Countryside Cottage",
+//     "Swiss Alps Resort"
+//   ],
 
-  room: [
-    "RGB Lights",
-    "Indoor Plants",
-    "Minimal Luxury"
-  ],
+//   room: [
+//     "RGB Lights",
+//     "Indoor Plants",
+//     "Minimal Luxury"
+//   ],
 
-  accessory: [
-    "Layered Chains",
-    "Delicate Necklace",
-    "Luxury Watch"
-  ]
+//   accessory: [
+//     "Layered Chains",
+//     "Delicate Necklace",
+//     "Luxury Watch"
+//   ]
+// };
+
+// for (const field of Object.keys(validOptions)) {
+
+//     if (!validOptions[field].includes(answers[field])) {
+
+//         return res.status(400).json({
+//             success: false,
+//             message: `Invalid value for ${field}`
+//         });
+
+//     }
+
+// }
+//     // Calculate tribe
+//     const result = assignTribe(answers);
+const answers = req.body;
+
+// If frontend sends { answers: {...} }, unwrap it
+const payload = answers.answers || answers;
+
+const requiredFields = [
+  "weekend",
+  "colors",
+  "shoes",
+  "vacation",
+  "room",
+  "accessory",
+];
+
+for (const field of requiredFields) {
+  if (!payload[field]) {
+    return res.status(400).json({
+      success: false,
+      message: `Missing field: ${field}`,
+    });
+  }
+}
+
+// Normalize frontend values to backend values
+const answerMap = {
+  weekend: {
+    "rooftop rave in tokyo": "Rooftop rave in Tokyo",
+    "cozy café with a book": "Cozy café with a book",
+    "cozy cafe with a book": "Cozy café with a book",
+    "country club brunch": "Country Club Brunch",
+  },
+
+  colors: {
+    "electric purple & chrome": "Electric Purple & Chrome",
+    "cream & sage": "Cream & Sage",
+    "navy & camel": "Navy & Camel",
+  },
+
+  shoes: {
+    "chunky sneakers": "Chunky Sneakers",
+    "canvas sandals": "Canvas Sandals",
+    "leather loafers": "Leather Loafers",
+  },
+
+  vacation: {
+    "seoul nightlife": "Seoul Nightlife",
+    "countryside cottage": "Countryside Cottage",
+    "swiss alps resort": "Swiss Alps Resort",
+  },
+
+  room: {
+    "rgb lights": "RGB Lights",
+    "indoor plants": "Indoor Plants",
+    "minimal luxury": "Minimal Luxury",
+  },
+
+  accessory: {
+    "layered chains": "Layered Chains",
+    "delicate necklace": "Delicate Necklace",
+    "luxury watch": "Luxury Watch",
+  },
 };
 
-for (const field of Object.keys(validOptions)) {
+const normalizedAnswers = {};
 
-    if (!validOptions[field].includes(answers[field])) {
+for (const field of requiredFields) {
+  const value = String(payload[field]).trim().toLowerCase();
 
-        return res.status(400).json({
-            success: false,
-            message: `Invalid value for ${field}`
-        });
+  if (!answerMap[field][value]) {
+    console.log("Received:", payload);
 
-    }
+    return res.status(400).json({
+      success: false,
+      message: `Invalid value for ${field}`,
+      received: payload[field],
+      expected: Object.values(answerMap[field]),
+    });
+  }
 
+  normalizedAnswers[field] = answerMap[field][value];
 }
-    // Calculate tribe
-    const result = assignTribe(answers);
 
+// Use normalized answers from here onwards
+const result = assignTribe(normalizedAnswers);
     // Fetch tribe details
     const { data: tribeData, error } = await supabase
       .from("tribes")
