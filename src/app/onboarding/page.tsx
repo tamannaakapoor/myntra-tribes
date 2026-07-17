@@ -40,33 +40,33 @@ const TRIBES = {
 // --- DYNAMIC QUESTION IMAGES MAPPED BY KEY ---
 const DYNAMIC_IMAGES: Record<string, string[]> = {
   weekend: [
-    'https://images.unsplash.com/photo-1560857617-84149b7abe53?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Cafe
-    'https://images.unsplash.com/photo-1659059717901-45e523207d43?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Rooftop
+    'https://images.unsplash.com/photo-1608690158878-1a96b29b455b?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // neon city life
+    'https://plus.unsplash.com/premium_photo-1686593546445-e9655e1eaea5?q=80&w=686&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // picnic in nature
     'https://images.unsplash.com/photo-1773450970959-cef81e9b1053?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Luxury brunch
   ],
   colors: [
-    'https://images.unsplash.com/photo-1518057111178-44a106bad636?q=80&w=600&auto=format&fit=crop', // Blush/Cream
-    'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop', // Neon
-    'https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Beige/Linen
+    'https://plus.unsplash.com/premium_photo-1706727290055-926dcacd03bb?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // purple/green
+    'https://images.unsplash.com/photo-1713640776184-f0430f43677b?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // cream/sage
+    'https://images.unsplash.com/photo-1762605135318-f34a993cbcf0?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // navy/beige
   ],
   shoes: [
-    'https://images.unsplash.com/photo-1645477352686-8c2a686564f8?q=80&w=762&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Sandals
-    'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?q=80&w=600&auto=format&fit=crop', // Chunky Sneakers
+    'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?q=80&w=600&auto=format&fit=crop', // sneakers
+    'https://images.unsplash.com/photo-1618615098938-84fc29796e76?q=80&w=688&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // sandals
     'https://images.unsplash.com/photo-1616406432452-07bc5938759d?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Loafers
   ],
   vacation: [
-    'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?q=80&w=600&auto=format&fit=crop', // Swiss
-    'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=600&auto=format&fit=crop', // Tokyo
+    'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=600&auto=format&fit=crop', // tokyo
+    'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?q=80&w=600&auto=format&fit=crop', // swiss
     'https://images.unsplash.com/photo-1631173384324-6716de52d8bb?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Monaco
   ],
   room: [
-    'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?q=80&w=600&auto=format&fit=crop', // Plants
-    'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop', // LED
+    'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop', // led
+    'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?q=80&w=600&auto=format&fit=crop', //plants
     'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=600&auto=format&fit=crop', // Minimal Luxury
   ],
   accessory: [
-    'https://images.unsplash.com/photo-1517472292914-9570a594783b?q=80&w=1133&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Silk Scarf
     'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // Silver Chains
+    'https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', // straw hats
     'https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=600&auto=format&fit=crop', // Vintage Watch
   ]
 };
@@ -79,12 +79,12 @@ const FALLBACK_OPTION_IMAGES = [
 ];
 
 const FALLBACK_QUESTIONS = [
-  { id: 1, key: "weekend", question: "Your ideal Sunday morning?", options: ["Cafe & croissants", "Rooftop downtown", "Luxury brunch"] },
-  { id: 2, key: "colors", question: "Pick a color palette", options: ["Blush + pearl + cream", "Neon + black + chrome", "Beige + gold + linen"] },
-  { id: 3, key: "shoes", question: "Pick your footwear", options: ["Strappy Sandals", "Chunky Sneakers", "Leather Loafers"] },
-  { id: 4, key: "vacation", question: "Dream destination", options: ["Swiss Countryside", "Tokyo Nights", "Monaco Coast"] },
-  { id: 5, key: "room", question: "Your room aesthetic?", options: ["Plants & Wood", "LED & Chrome", "Minimal Luxury"] },
-  { id: 6, key: "accessory", question: "Essential accessory", options: ["Silk Scarf", "Silver Chains", "Vintage Watch"] }
+  { id: 1, key: "weekend", question: "Your ideal Sunday morning?", options: ["neon city", "picnic", "Luxury brunch"] },
+  { id: 2, key: "colors", question: "Pick a color palette", options: ["purple/green", "cream/sage", "navy/beige"] },
+  { id: 3, key: "shoes", question: "Pick your footwear", options: ["sneakers", "sandals", "Leather Loafers"] },
+  { id: 4, key: "vacation", question: "Dream destination", options: ["Tokyo Nights", "Swiss", "Monaco Coast"] },
+  { id: 5, key: "room", question: "Your room aesthetic?", options: ["LED & Chrome", "Plants", "Minimal Luxury"] },
+  { id: 6, key: "accessory", question: "Essential accessory", options: ["Silver Chains", "Straw Hats", "Vintage Watch"] }
 ];
 
 export default function OnboardingPage() {
@@ -101,7 +101,16 @@ export default function OnboardingPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [revealedTribe, setRevealedTribe] = useState<typeof TRIBES['golden-hour'] | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+  // -------------------------------------------------------------
+  // ✨ BULLETPROOF API URL SETUP
+  // -------------------------------------------------------------
+  const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) {
+      url = `${url.replace(/\/$/, "")}/api`;
+    }
+    return url;
+  };
 
   // Fetch Questions & Username on Mount
   useEffect(() => {
@@ -115,17 +124,17 @@ export default function OnboardingPage() {
 
     const fetchQuestions = async () => {
       try {
-        const res = await fetch(`${API_URL}/quiz/questions`);
+        const res = await fetch(`${getApiUrl()}/quiz/questions`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && data.questions.length > 0) setQuestions(data.questions);
         }
       } catch (error) {
-        console.warn("Backend not reachable, using fallback questions.");
+        console.warn("Backend questions not reachable, using fallback questions.");
       }
     };
     fetchQuestions();
-  }, [API_URL]);
+  }, []);
 
   const handleOptionSelect = async (questionKey: string, selectedText: string, index: number) => {
     setSelectedOption(index);
@@ -142,44 +151,93 @@ export default function OnboardingPage() {
     }, 400); 
   };
 
-  const submitQuiz = async (finalAnswers: Record<string, string>) => {
+  // -------------------------------------------------------------
+  // 🚀 SUBMIT QUIZ API INTEGRATION
+  // -------------------------------------------------------------
+ const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsCalculating(true);
-    let finalSlug: keyof typeof TRIBES = 'golden-hour';
+    let finalSlug: keyof typeof TRIBES = 'neon-static';
+    
+    // Index-based fallback calculation
+    const counts = { 'neon-static': 0, 'golden-hour': 0, 'vault-heir': 0 };
+    Object.entries(finalAnswers).forEach(([key, ansText]) => {
+      const q = questions.find(q => q.key === key);
+      if (q) {
+        const index = q.options.indexOf(ansText);
+        if (index === 0) counts['neon-static']++;
+        else if (index === 1) counts['golden-hour']++;
+        else if (index === 2) counts['vault-heir']++;
+      }
+    });
+    
+    finalSlug = (Object.keys(counts).reduce((a, b) => counts[a as keyof typeof counts] > counts[b as keyof typeof counts] ? a : b) as keyof typeof TRIBES);
 
     try {
-      const res = await fetch(`${API_URL}/tribes/assign`, {
+      const token = localStorage.getItem('tribe_jwt');
+      const answersArray = Object.values(finalAnswers);
+
+      // 👇 DEV DEBUGGING: Print exactly what we are sending!
+      console.log("🚀 DEBUG - Payload being sent:", JSON.stringify({ answers: answersArray }));
+
+      const res = await fetch(`${getApiUrl()}/quiz/submit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: finalAnswers })
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ answers: answersArray })
       });
+      
       if (res.ok) {
         const data = await res.json();
-        finalSlug = data?.assignedTribe?.slug || data?.tribe?.slug || data?.slug || 'golden-hour';
+        console.log("🚀 DEBUG - Quiz API Response:", data);
+        const returnedTribe = data.assignedTribe?.slug || data.tribe?.slug || data.slug || data.tribe;
+        if (typeof returnedTribe === 'string') {
+          const formattedSlug = returnedTribe.toLowerCase().replace(/\s+/g, '-');
+          if (TRIBES[formattedSlug as keyof typeof TRIBES]) finalSlug = formattedSlug as keyof typeof TRIBES;
+        }
+      } else {
+        // 👇 DEV DEBUGGING: Print the exact backend error if it fails
+        const errorText = await res.text();
+        console.error("🛑 Backend rejected the payload:", errorText);
       }
     } catch (error) {
-      const counts = { 'golden-hour': 0, 'neon-static': 0, 'vault-heir': 0 };
-      Object.values(finalAnswers).forEach(ans => {
-        if (ans.includes('Cafe') || ans.includes('Blush') || ans.includes('Sandals') || ans.includes('Swiss')) counts['golden-hour']++;
-        else if (ans.includes('Rooftop') || ans.includes('Neon') || ans.includes('Sneakers') || ans.includes('Tokyo')) counts['neon-static']++;
-        else counts['vault-heir']++;
-      });
-      finalSlug = (Object.keys(counts).reduce((a, b) => counts[a as keyof typeof counts] > counts[b as keyof typeof counts] ? a : b) as keyof typeof TRIBES);
+      console.warn("Quiz API unreachable.");
     }
-
+    
     await new Promise(r => setTimeout(r, 1000));
     setIsCalculating(false);
-    setRevealedTribe(TRIBES[finalSlug] || TRIBES['golden-hour']);
+    setRevealedTribe(TRIBES[finalSlug] || TRIBES['neon-static']);
   };
 
-  // 👇 UPDATED: Trigger the reveal screen instead of skipping it!
   const manuallyAssignTribe = (slug: keyof typeof TRIBES) => {
     const selected = TRIBES[slug];
-    setShowManual(false); // Hide the manual selection grid
-    setRevealedTribe(selected); // Show the beautiful reveal card
+    setShowManual(false); 
+    setRevealedTribe(selected); 
   };
 
-  const acceptTribeAndContinue = () => {
+  // -------------------------------------------------------------
+  // 🚀 SAVE TRIBE API INTEGRATION
+  // -------------------------------------------------------------
+  const acceptTribeAndContinue = async () => {
     if (!revealedTribe) return;
+    
+    try {
+      const token = localStorage.getItem('tribe_jwt');
+      // Aditi's API expects exactly: { "tribe_name": "Golden Hour" }
+      await fetch(`${getApiUrl()}/user/tribe`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ tribe_name: revealedTribe.name })
+      });
+    } catch (error) {
+      console.warn("Failed to save tribe to backend, but routing to dashboard anyway.");
+    }
+
+    // Save to our frontend global state and go to dashboard
     setTribe(revealedTribe.slug, revealedTribe.config);
     router.push('/dashboard');
   };

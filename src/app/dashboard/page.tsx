@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 
 // --- FIXED NAV MINI AVATAR ---
-// Uses the exact same code as your Persona Studio, but zoomed in on the face!
 function NavAvatar({ skinTone, hairStyle }: { skinTone: string, hairStyle: string }) {
   return (
     <svg viewBox="40 20 120 120" className="w-full h-full pt-2 drop-shadow-sm">
@@ -55,7 +54,14 @@ export default function DashboardPage() {
     hair: 'Long'
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+  // ✨ BULLETPROOF API URL
+  const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) {
+      url = `${url.replace(/\/$/, "")}/api`;
+    }
+    return url;
+  };
 
   useEffect(() => {
     const userStr = localStorage.getItem('tribe_user');
@@ -71,12 +77,14 @@ export default function DashboardPage() {
     const fetchAvatar = async () => {
       if (!token) return;
       try {
-        const res = await fetch(`${API_URL}/avatar/me`, {
+        const res = await fetch(`${getApiUrl()}/avatar/me`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await res.json();
-        if (data.success && data.avatar) {
-          setAvatarConfig(data.avatar);
+        // Look for the avatar in standard places based on common backend patterns
+        const avatarData = data.avatar || data.data || data;
+        if (res.ok && avatarData && avatarData.skin_color) {
+          setAvatarConfig(avatarData);
         }
       } catch (error) {
         console.warn("Could not fetch avatar for navbar.");
@@ -84,7 +92,7 @@ export default function DashboardPage() {
     };
 
     fetchAvatar();
-  }, [API_URL]);
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans relative overflow-x-hidden pb-20">
@@ -133,7 +141,7 @@ export default function DashboardPage() {
                <NavAvatar skinTone={avatarConfig.skin_color} hairStyle={avatarConfig.hair} />
             </button>
 
-            <button onClick={() => router.push('/auth')} className="text-[#888888] hover:text-black transition-colors">
+            <button onClick={() => { localStorage.clear(); router.push('/auth'); }} className="text-[#888888] hover:text-black transition-colors">
               <LogOut className="w-5 h-5" />
             </button>
           </div>

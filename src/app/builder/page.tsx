@@ -19,6 +19,39 @@ export interface Product {
 
 const CATEGORIES = ['All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
 
+// --- 👇 DYNAMIC MINI AVATAR COMPONENT ---
+function MiniAvatar({ skinTone, hairStyle, bodyType }: { skinTone: string, hairStyle: string, bodyType: string }) {
+  const bodyWidth = bodyType === 'Slim' ? 70 : bodyType === 'Athletic' ? 85 : bodyType === 'Curvy' ? 105 : 125;
+  return (
+    <svg viewBox="0 0 200 300" className="w-full h-full drop-shadow-xl">
+      <defs>
+        <linearGradient id="dressGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#ff4d79" />
+          <stop offset="100%" stopColor="#ff99b3" />
+        </linearGradient>
+      </defs>
+      {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
+      {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
+      {hairStyle === 'Curly' && <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />}
+      <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
+      <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
+      <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" />
+      <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" />
+      <rect x="92" y="110" width="16" height="20" fill={skinTone} />
+      <path d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} fill="url(#dressGrad)" />
+      <circle cx="100" cy="80" r="38" fill={skinTone} />
+      <circle cx="85" cy="80" r="3.5" fill="#111111" />
+      <circle cx="115" cy="80" r="3.5" fill="#111111" />
+      <circle cx="72" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      <circle cx="128" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
+      <path d="M 92 92 Q 100 100 108 92" stroke="#ff4d79" strokeWidth="2.5" fill="transparent" strokeLinecap="round" />
+      {hairStyle !== 'Buzz' && <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />}
+      {hairStyle === 'Buzz' && <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />}
+    </svg>
+  );
+}
+
 export default function BuilderPage() {
   const router = useRouter();
   const { themeConfig } = useTribeStore();
@@ -29,57 +62,79 @@ export default function BuilderPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
-  // 👇 NEW: State for the Publish Form
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
+  
+  // 👇 NEW: State to hold the user's avatar
+  const [avatarConfig, setAvatarConfig] = useState<any>(null);
+
+  // ✨ BULLETPROOF API URL
+  const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) {
+      url = `${url.replace(/\/$/, "")}/api`;
+    }
+    return url;
+  };
 
   // -------------------------------------------------------------
-  // 🔌 LIVE EXPRESS BACKEND FETCH (Aditi's API)
+  // 🔌 FETCH PRODUCTS & AVATAR ON MOUNT
   // -------------------------------------------------------------
   useEffect(() => {
+    const token = localStorage.getItem('tribe_jwt');
+
+    // 1. Fetch Avatar
+    const fetchAvatar = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${getApiUrl()}/avatar/me`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const savedAvatar = data.avatar || data.data || data;
+          if (savedAvatar && savedAvatar.skin_color) {
+            setAvatarConfig(savedAvatar);
+          }
+        }
+      } catch (error) {
+        console.warn("Could not fetch avatar for builder.", error);
+      }
+    };
+    fetchAvatar();
+
+    // 2. Fetch Products
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
-        
         const endpoint = searchQuery 
-          ? `${API_URL}/products?search=${encodeURIComponent(searchQuery)}`
-          : `${API_URL}/products`;
+          ? `${getApiUrl()}/products?search=${encodeURIComponent(searchQuery)}`
+          : `${getApiUrl()}/products`;
 
         const res = await fetch(endpoint);
-        
         if (!res.ok) throw new Error("Backend responded with an error");
 
         const data = await res.json();
-        
         let fetchedProducts = [];
-        if (data.products && Array.isArray(data.products)) {
-          fetchedProducts = data.products;
-        } else if (Array.isArray(data)) {
-          fetchedProducts = data;
-        } else if (data.data && Array.isArray(data.data)) {
-          fetchedProducts = data.data;
-        }
+        if (data.products && Array.isArray(data.products)) fetchedProducts = data.products;
+        else if (Array.isArray(data)) fetchedProducts = data;
+        else if (data.data && Array.isArray(data.data)) fetchedProducts = data.data;
         
         const womenProducts = fetchedProducts.filter((p: Product) => 
           p.gender === 'Women' || p.gender === 'Girls' || !p.gender
         );
 
         setProducts(womenProducts);
-
       } catch (error) {
-        console.error("Failed to fetch products. Loading fallbacks for testing.", error);
-        
-        // 👇 TEMPORARY FALLBACK DATA so your UI doesn't break while backend is down
+        console.error("Failed to fetch products. Loading fallbacks.", error);
         setProducts([
           { id: '1', name: 'Y2K Crop Top', price: 999, category: 'Tops', image_url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=400' },
           { id: '2', name: 'Baggy Denim', price: 1999, category: 'Bottoms', image_url: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400' },
           { id: '3', name: 'Chunky Sneakers', price: 2499, category: 'Shoes', image_url: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400' },
           { id: '4', name: 'Vintage Leather Jacket', price: 3499, category: 'Outerwear', image_url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400' },
         ]);
-        
       } finally {
         setIsLoading(false);
       }
@@ -104,29 +159,33 @@ export default function BuilderPage() {
     
     try {
       const token = localStorage.getItem('tribe_jwt');
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      const productsArray = canvasItems.map(item => item.id);
+      const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
 
-      // Grab just the IDs of the products the user selected
-      const product_ids = canvasItems.map(item => item.id);
+      console.log("🚀 DEBUG - Publishing Payload:", { title, description, tags: tagsArray, products: productsArray });
 
-      const response = await fetch(`${API_URL}/lookbooks/publish`, {
+      const response = await fetch(`${getApiUrl()}/lookbooks`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}` 
         },
         body: JSON.stringify({
-          title,
-          description,
-          tags,
-          product_ids
+          title: title,
+          description: description,
+          tags: tagsArray,
+          products: productsArray
         })
       });
+
+      if (!response.ok) {
+         const err = await response.text();
+         console.error("🛑 Publish rejected:", err);
+      }
 
       const data = await response.json();
 
       if (data.success || response.ok) {
-        // Success! Take them to the feed so they can see their new lookbook
         router.push('/feed');
       } else {
         alert(data.message || "Failed to publish lookbook.");
@@ -147,21 +206,18 @@ export default function BuilderPage() {
   const accentColor = themeConfig?.accent || '#ff3f6c';
   const surfaceColor = themeConfig?.surface || '#FFFFFF';
   const bgColor = themeConfig?.background || '#FFF5F8';
-  
   const fontFam = themeConfig?.font || 'Georgia, serif';
   const customFont = fontFam.includes(' ') ? `'${fontFam}', serif` : `${fontFam}, sans-serif`;
 
   const filteredProducts = products.filter(p => {
     const pCat = (p.category || '').toLowerCase();
     const aCat = activeCat.toLowerCase();
-    
     if (activeCat === 'All') return true;
     if (aCat === 'tops') return pCat.includes('shirt') || pCat.includes('top') || pCat.includes('kurta') || pCat.includes('tshirt');
     if (aCat === 'bottoms') return pCat.includes('jean') || pCat.includes('trouser') || pCat.includes('pant') || pCat.includes('short') || pCat.includes('skirt') || pCat.includes('track');
     if (aCat === 'outerwear') return pCat.includes('jacket') || pCat.includes('sweatshirt') || pCat.includes('sweater') || pCat.includes('coat') || pCat.includes('hoodie');
     if (aCat === 'shoes') return pCat.includes('shoe') || pCat.includes('sandal') || pCat.includes('sneaker') || pCat.includes('boot') || pCat.includes('flip') || pCat.includes('heel');
     if (aCat === 'accessories') return pCat.includes('bag') || pCat.includes('watch') || pCat.includes('belt') || pCat.includes('jewel') || pCat.includes('sunglass') || pCat.includes('wallet') || pCat.includes('backpack');
-    
     return pCat.includes(aCat);
   });
 
@@ -268,7 +324,6 @@ export default function BuilderPage() {
           {/* RIGHT COLUMN: CANVAS BUILDER */}
           <div className="lg:col-span-5 flex flex-col p-6 md:p-8 rounded-[2rem] shadow-sm transition-colors duration-700 border min-h-[500px]" style={{ backgroundColor: surfaceColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}>
             
-            {/* 👇 UPDATED: Form Inputs now map to State */}
             <div className="flex flex-col gap-5 mb-8 shrink-0">
               <input 
                 type="text" 
@@ -309,16 +364,33 @@ export default function BuilderPage() {
                   </motion.div>
                 </AnimatePresence>
               ) : (
-                <div className="absolute inset-0 p-4 grid grid-cols-2 gap-4 overflow-y-auto no-scrollbar content-start">
-                  <AnimatePresence>
-                    {canvasItems.map((item, idx) => (
-                      <motion.div key={`${item.id}-${idx}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="relative group rounded-[1.25rem] overflow-hidden shadow-sm aspect-[4/5] border border-black/5">
-                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                        <button onClick={() => removeFromCanvas(idx)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md text-[#111111] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-sm"><X className="w-3 h-3" /></button>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                <>
+                  <div className="absolute inset-0 p-4 grid grid-cols-2 gap-4 overflow-y-auto no-scrollbar content-start">
+                    <AnimatePresence>
+                      {canvasItems.map((item, idx) => (
+                        <motion.div key={`${item.id}-${idx}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="relative group rounded-[1.25rem] overflow-hidden shadow-sm aspect-[4/5] border border-black/5">
+                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                          <button onClick={() => removeFromCanvas(idx)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-md text-[#111111] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-sm"><X className="w-3 h-3" /></button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* 👇 YOUR DYNAMIC MINI AVATAR OVERLAY */}
+                  {avatarConfig && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      className="absolute bottom-4 right-4 w-[70px] h-[110px] z-20 pointer-events-none drop-shadow-2xl"
+                    >
+                      <MiniAvatar 
+                        skinTone={avatarConfig.skin_color} 
+                        hairStyle={avatarConfig.hair} 
+                        bodyType={avatarConfig.body_type} 
+                      />
+                    </motion.div>
+                  )}
+                </>
               )}
             </div>
           </div>
