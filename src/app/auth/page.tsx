@@ -18,32 +18,50 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
-      const endpoint = isLogin ? "/auth/login" : "/auth/signup";
+      const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      const CLEAN_API_URL = RAW_API_URL.replace(/\/$/, ""); 
+      
+      const endpoint = isLogin ? "/auth/login" : "/auth/register";
+      const finalUrl = `${CLEAN_API_URL}${endpoint}`;
+      
       const body = isLogin ? { email, password } : { username: name, email, password };
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      const response = await fetch(finalUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Authentication failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        throw new Error("The backend server returned a webpage instead of data.");
       }
 
-      localStorage.setItem("tribe_jwt", data.session.access_token);
-      localStorage.setItem("tribe_user", JSON.stringify(data.user));
+      const data = await response.json();
 
-      router.push("/onboarding");
+      if (!response.ok || data.error) {
+        throw new Error(data.message || data.error || "Authentication failed");
+      }
+
+      // 👇 THE FIX: Look inside data.session for the access_token!
+      const token = data.token || (data.session && data.session.access_token);
+
+      if (token) {
+        // SUCCESS!
+        localStorage.setItem("tribe_jwt", token);
+        localStorage.setItem("tribe_user", JSON.stringify(data.user || (data.session && data.session.user) || { username: name, email }));
+        router.push("/onboarding");
+      } else if (!isLogin && (data.success || response.ok || data.message)) {
+        alert("Registration successful! Please log in to enter your Tribe.");
+        setIsLogin(true); 
+      } else {
+        throw new Error(`No token found in response.`);
+      }
       
     } catch (error: any) {
-      console.warn("Backend unavailable. Bypassing to UI.", error.message);
-      localStorage.setItem("tribe_jwt", "mock_token_12345");
-      localStorage.setItem("tribe_user", JSON.stringify({ name: name || "Editorial User", email }));
-      router.push("/onboarding");
+      console.error("Auth Error:", error);
+      alert(`Login/Signup Failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
