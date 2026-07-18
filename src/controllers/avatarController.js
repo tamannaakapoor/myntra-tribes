@@ -38,7 +38,6 @@ const createAvatar = async (req, res) => {
 if (isNew) {
   await addPoints(req.user.id, 20);
 }
-        await addPoints(req.user.id, 20);
 
     return res.status(201).json({
       success: true,
@@ -63,9 +62,34 @@ if (isNew) {
     });
   }
 };
+// const getCurrentUserAvatar = async (req, res) => {
+//   try {
+//     const avatar = await getMyAvatar(req.user.id);
+
+//     return res.status(200).json({
+//       success: true,
+//       avatar,
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
 const getCurrentUserAvatar = async (req, res) => {
   try {
     const avatar = await getMyAvatar(req.user.id);
+
+    if (!avatar) {
+      return res.status(404).json({
+        success: false,
+        message: "Avatar not found",
+      });
+    }
 
     return res.status(200).json({
       success: true,

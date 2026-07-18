@@ -183,8 +183,23 @@ return {
 
 //   return data;
 // };
+// const getMyAvatar = async (userId) => {
+//   const { data, error } = await supabase
+//     .from("avatars")
+//     .select("*")
+//     .eq("user_id", userId)
+//     .order("created_at", { ascending: false })
+//     .limit(1)
+//     .maybeSingle();
+
+//   if (error) throw error;
+
+//   return data;
+// };
 const getMyAvatar = async (userId) => {
-  const { data, error } = await supabase
+
+  // Avatar
+  const { data: avatar, error: avatarError } = await supabase
     .from("avatars")
     .select("*")
     .eq("user_id", userId)
@@ -192,9 +207,65 @@ const getMyAvatar = async (userId) => {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw error;
+  if (avatarError) throw avatarError;
 
-  return data;
+  if (!avatar) return null;
+
+  // Profile
+  const { data: profile, error: profileError } = await supabase
+    .from("profile")
+    .select("username, active_tribe_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) throw profileError;
+
+  let tribe = null;
+
+  if (profile?.active_tribe_id) {
+
+    const { data: tribeData, error: tribeError } = await supabase
+      .from("tribes")
+      .select("id, name, slug")
+      .eq("id", profile.active_tribe_id)
+      .maybeSingle();
+
+    if (tribeError) throw tribeError;
+
+    tribe = tribeData;
+  }
+
+  // return {
+
+  //   id: avatar.id,
+
+  //   hair: avatar.hair,
+
+  //   body_type: avatar.body_type,
+
+  //   skin_color: avatar.skin_color,
+
+  //   gender: avatar.gender,
+
+  //   username: profile?.username,
+
+  //   tribe
+
+  // };
+  return {
+  id: avatar.id,
+  name: avatar.name,
+  gender: avatar.gender,
+  hair: avatar.hair,
+  skin_color: avatar.skin_color,
+  body_type: avatar.body_type,
+
+  follower_count: avatar.follower_count,
+
+  username: profile?.username,
+
+  tribe,
+};
 };
 module.exports = {
   createAvatar,
