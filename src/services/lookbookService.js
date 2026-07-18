@@ -296,7 +296,7 @@ const getFeed = async (tribeName) => {
 
       // Get profile
       const { data: profile } = await supabase
-        .from("profile")
+        .from("profiles")
         .select("username, active_tribe_id")
         .eq("id", lookbook.avatars.user_id)
         .maybeSingle();

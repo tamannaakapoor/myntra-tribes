@@ -213,7 +213,7 @@ const getMyAvatar = async (userId) => {
 
   // Profile
   const { data: profile, error: profileError } = await supabase
-    .from("profile")
+    .from("profiles")
     .select("username, active_tribe_id")
     .eq("id", userId)
     .maybeSingle();
