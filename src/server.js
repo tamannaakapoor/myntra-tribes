@@ -45,9 +45,10 @@ const userRoutes = require("./routes/userRoutes");
 const leaderboardRoutes =require("./routes/leaderboardRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const voteRoutes = require("./routes/voteRoutes");
+const gelaphaRoutes = require("./routes/gelaphaRoutes");
 
 app.use("/api/votes", voteRoutes);
-
+app.use("/api/gelapha", gelaphaRoutes);
 app.use("/api/ai", aiRoutes);
 app.use(
   "/api/leaderboard",
