@@ -5,42 +5,29 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { 
   Trophy, LogOut, Plus, Sparkles, Flame, Droplets, 
-  Heart, Bookmark, ThumbsUp, Palette, Image as ImageIcon, Wand2
+  Heart, Bookmark, ThumbsUp, Palette, Image as ImageIcon, Wand2, Leaf, ArrowRight
 } from 'lucide-react';
 
 // --- FIXED NAV MINI AVATAR ---
 function NavAvatar({ skinTone, hairStyle }: { skinTone: string, hairStyle: string }) {
   return (
     <svg viewBox="40 20 120 120" className="w-full h-full pt-2 drop-shadow-sm">
-      {/* Hair (Back Layer) */}
       {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
       {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
       {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
-      {hairStyle === 'Curly' && (
-        <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />
-      )}
+      {hairStyle === 'Curly' && <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />}
 
-      {/* Neck & Shoulders */}
       <rect x="92" y="110" width="16" height="20" fill={skinTone} />
       <path d="M 65 125 L 135 125 L 130 220 L 70 220 Z" fill="#ff4d79" />
-
-      {/* Head */}
       <circle cx="100" cy="80" r="38" fill={skinTone} />
-
-      {/* Face Details */}
       <circle cx="85" cy="80" r="3.5" fill="#111111" />
       <circle cx="115" cy="80" r="3.5" fill="#111111" />
       <circle cx="72" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
       <circle cx="128" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
       <path d="M 92 92 Q 100 100 108 92" stroke="#ff4d79" strokeWidth="2.5" fill="transparent" strokeLinecap="round" />
 
-      {/* Hair (Front Bangs) */}
-      {hairStyle !== 'Buzz' && (
-        <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />
-      )}
-      {hairStyle === 'Buzz' && (
-        <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />
-      )}
+      {hairStyle !== 'Buzz' && <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />}
+      {hairStyle === 'Buzz' && <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />}
     </svg>
   );
 }
@@ -54,7 +41,6 @@ export default function DashboardPage() {
     hair: 'Long'
   });
 
-  // ✨ BULLETPROOF API URL
   const getApiUrl = () => {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
     if (!url.endsWith("/api")) {
@@ -64,16 +50,24 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    // 👇 FIXED: Bulletproof Name Extraction so it actually says "tamanna"
     const userStr = localStorage.getItem('tribe_user');
-    const token = localStorage.getItem('tribe_jwt');
-
     if (userStr) {
       try {
-        const user = JSON.parse(userStr);
-        if (user.username || user.name) setUsername(user.username || user.name);
+        const parsed = JSON.parse(userStr);
+        const extractedName = 
+          parsed.username || 
+          parsed.name || 
+          parsed.user?.username || 
+          parsed.user?.name || 
+          parsed.data?.username || 
+          parsed.data?.name;
+          
+        if (extractedName) setUsername(extractedName);
       } catch (e) {}
     }
 
+    const token = localStorage.getItem('tribe_jwt');
     const fetchAvatar = async () => {
       if (!token) return;
       try {
@@ -81,7 +75,6 @@ export default function DashboardPage() {
           headers: { "Authorization": `Bearer ${token}` }
         });
         const data = await res.json();
-        // Look for the avatar in standard places based on common backend patterns
         const avatarData = data.avatar || data.data || data;
         if (res.ok && avatarData && avatarData.skin_color) {
           setAvatarConfig(avatarData);
@@ -103,9 +96,7 @@ export default function DashboardPage() {
         <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
           
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#ff3f6c] flex items-center justify-center text-white font-serif font-bold text-xl shadow-md shadow-[#ff3f6c]/20">
-              M
-            </div>
+            <div className="w-10 h-10 rounded-full bg-[#ff3f6c] flex items-center justify-center text-white font-serif font-bold text-xl shadow-md shadow-[#ff3f6c]/20">M</div>
             <div className="flex flex-col leading-none">
               <span className="text-[10px] font-bold tracking-[0.2em] text-[#888888] uppercase">Myntra</span>
               <span className="font-serif font-bold text-xl tracking-tight">Tribes</span>
@@ -113,15 +104,15 @@ export default function DashboardPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-8 font-medium text-sm">
-            <button onClick={() => router.push('/dashboard')} className="px-4 py-2 bg-black/5 rounded-full font-bold">
-              Home
+            <button className="px-4 py-2 bg-black/5 rounded-full font-bold">Home</button>
+            <button onClick={() => router.push('/feed')} className="text-[#666666] hover:text-black transition-colors">Feed</button>
+            <button onClick={() => router.push('/leaderboard')} className="text-[#666666] hover:text-black transition-colors">Leaderboard</button>
+            
+            {/* 👇 GELAPHA NAV LINK */}
+            <button onClick={() => router.push('/thrift')} className="flex items-center gap-1.5 text-[#15803d] hover:text-[#166534] transition-colors font-bold">
+              <Leaf className="w-4 h-4" /> Gelapha
             </button>
-            <button onClick={() => router.push('/feed')} className="text-[#666666] hover:text-black transition-colors">
-              Feed
-            </button>
-            <button onClick={() => router.push('/leaderboard')} className="text-[#666666] hover:text-black transition-colors">
-              Leaderboard
-            </button>
+            
             <button onClick={() => router.push('/builder')} className="bg-[#ff3f6c] text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 hover:bg-[#E11D48] transition-colors shadow-md shadow-[#ff3f6c]/20">
               <Plus className="w-4 h-4" /> Create
             </button>
@@ -132,7 +123,6 @@ export default function DashboardPage() {
               <Trophy className="w-4 h-4" /> 0 pts
             </div>
             
-            {/* 👇 AVATAR BUTTON */}
             <button 
               onClick={() => router.push('/persona')}
               className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ring-2 ring-transparent hover:ring-[#ff3f6c]/30"
@@ -152,7 +142,7 @@ export default function DashboardPage() {
       <div className="max-w-[1400px] mx-auto px-6 pt-32 relative z-10">
         
         {/* --- HERO SECTION --- */}
-        <section className="max-w-3xl mb-24">
+        <section className="max-w-3xl mb-16">
           <p className="text-[11px] font-bold tracking-[0.25em] text-[#ff3f6c] uppercase mb-6 flex items-center gap-2">
             Welcome{username ? `, ${username}` : ''} <span className="text-[#888888]">• Myntra Tribes</span>
           </p>
@@ -181,12 +171,56 @@ export default function DashboardPage() {
           </div>
         </section>
 
+        {/* 👇 --- NEW GELAPHA THRIFT BANNER --- */}
+        <section className="mb-24">
+          <div 
+            onClick={() => router.push('/thrift')}
+            className="relative w-full rounded-[2.5rem] p-8 md:p-14 overflow-hidden cursor-pointer group shadow-sm hover:shadow-2xl transition-all duration-500 border border-[#4ade80]/30"
+          >
+            {/* Background Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#f0fdf4] to-[#dcfce7] -z-20" />
+            <div className="absolute -right-20 -top-20 w-80 h-80 bg-[#4ade80]/20 rounded-full blur-3xl group-hover:bg-[#4ade80]/30 transition-all duration-500 -z-10" />
+            <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-[#ff3f6c]/10 rounded-full blur-3xl group-hover:bg-[#ff3f6c]/20 transition-all duration-500 -z-10" />
+            
+            <div className="flex flex-col md:flex-row items-center justify-between gap-10 z-10 relative">
+              
+              <div className="max-w-xl">
+                <div className="flex items-center gap-2 text-[#022c16] mb-5">
+                  <span className="bg-[#4ade80]/30 p-2 rounded-full"><Leaf className="w-4 h-4 text-[#15803d]" /></span>
+                  <span className="text-[10px] font-bold tracking-[0.2em] uppercase">Circular Fashion</span>
+                </div>
+                
+                <h2 className="text-4xl md:text-5xl font-bold text-[#022c16] mb-4 leading-tight" style={{ fontFamily: 'Georgia, serif' }}>
+                  Introducing <span className="italic text-[#15803d]">Gelapha</span>
+                </h2>
+                
+                <p className="text-[#166534] text-base md:text-lg mb-8 leading-relaxed">
+                  Give your gently used pieces a second life. Upload your items, get verified by Myntra, and earn exclusive Tribe points based on item condition. Sustainable fashion pays off.
+                </p>
+                
+                <button className="bg-[#15803d] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#166534] transition-all shadow-lg group-hover:-translate-y-1">
+                  Start Thrifting <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="w-full md:w-[400px] aspect-square relative rounded-3xl overflow-hidden shadow-xl border-[6px] border-white/60 transform group-hover:rotate-2 group-hover:scale-105 transition-all duration-500">
+                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1750343293522-2f08b60a317a?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }} />
+                 {/* Glassmorphic price/points tag floating on the image */}
+                 <div className="absolute bottom-4 right-4 bg-white/30 backdrop-blur-md border border-white/40 text-white px-4 py-2 rounded-2xl font-bold flex items-center gap-2 shadow-lg">
+                   +150 pts <Sparkles className="w-4 h-4 text-[#ff99b3]" />
+                 </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         {/* --- TRIBES SHOWCASE --- */}
         <section className="mb-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             <div className="group relative h-[400px] rounded-[2rem] overflow-hidden shadow-xl">
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }} />
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=687&auto=format&fit=crop')" }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute top-6 left-6 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-xl">✨</div>
               <div className="absolute bottom-0 left-0 p-8">
@@ -196,7 +230,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="group relative h-[400px] rounded-[2rem] overflow-hidden shadow-xl">
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=735&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }} />
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=735&auto=format&fit=crop')" }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute top-6 left-6 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-xl">🔥</div>
               <div className="absolute bottom-0 left-0 p-8">
@@ -206,7 +240,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="group relative h-[400px] rounded-[2rem] overflow-hidden shadow-xl">
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }} />
+              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=1074&auto=format&fit=crop')" }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute top-6 left-6 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-xl">🦋</div>
               <div className="absolute bottom-0 left-0 p-8">
