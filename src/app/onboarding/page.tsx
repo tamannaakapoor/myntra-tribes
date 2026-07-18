@@ -95,7 +95,9 @@ export default function OnboardingPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [username, setUsername] = useState('tamtam');
+  
+  // 👇 FIXED: Initialize dynamically and remove the hardcoded name
+  const [username, setUsername] = useState('');
   
   const [showManual, setShowManual] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -154,7 +156,7 @@ export default function OnboardingPage() {
   // -------------------------------------------------------------
   // 🚀 SUBMIT QUIZ API INTEGRATION
   // -------------------------------------------------------------
- const submitQuiz = async (finalAnswers: Record<string, string>) => {
+  const submitQuiz = async (finalAnswers: Record<string, string>) => {
     setIsCalculating(true);
     let finalSlug: keyof typeof TRIBES = 'neon-static';
     
@@ -176,7 +178,6 @@ export default function OnboardingPage() {
       const token = localStorage.getItem('tribe_jwt');
       const answersArray = Object.values(finalAnswers);
 
-      // 👇 DEV DEBUGGING: Print exactly what we are sending!
       console.log("🚀 DEBUG - Payload being sent:", JSON.stringify({ answers: answersArray }));
 
       const res = await fetch(`${getApiUrl()}/quiz/submit`, {
@@ -197,7 +198,6 @@ export default function OnboardingPage() {
           if (TRIBES[formattedSlug as keyof typeof TRIBES]) finalSlug = formattedSlug as keyof typeof TRIBES;
         }
       } else {
-        // 👇 DEV DEBUGGING: Print the exact backend error if it fails
         const errorText = await res.text();
         console.error("🛑 Backend rejected the payload:", errorText);
       }
@@ -224,7 +224,6 @@ export default function OnboardingPage() {
     
     try {
       const token = localStorage.getItem('tribe_jwt');
-      // Aditi's API expects exactly: { "tribe_name": "Golden Hour" }
       await fetch(`${getApiUrl()}/user/tribe`, {
         method: "POST",
         headers: { 
@@ -237,17 +236,15 @@ export default function OnboardingPage() {
       console.warn("Failed to save tribe to backend, but routing to dashboard anyway.");
     }
 
-    // Save to our frontend global state and go to dashboard
     setTribe(revealedTribe.slug, revealedTribe.config);
     router.push('/dashboard');
   };
 
-  // --- REVEAL SCREEN (MATCHING YOUR SCREENSHOT EXACTLY) ---
+  // --- REVEAL SCREEN ---
   if (revealedTribe) {
     return (
       <main className="h-screen w-full flex flex-col items-center justify-center relative overflow-hidden font-sans">
         
-        {/* Background Image - Heavily blurred & desaturated slightly */}
         <motion.div 
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -256,15 +253,13 @@ export default function OnboardingPage() {
           style={{ 
             backgroundImage: `url(${revealedTribe.image})`,
             filter: 'blur(24px) brightness(0.9) contrast(0.8)',
-            transform: 'scale(1.15)' // Scale up to hide blur edges
+            transform: 'scale(1.15)'
           }}
         />
         
-        {/* Soft whitish/pinkish overlay to ensure the card pops */}
         <div className="absolute inset-0 bg-[#FFF5F8]/40 mix-blend-overlay" />
         <div className="absolute inset-0 bg-white/30" />
 
-        {/* The Central Glassmorphic Card */}
         <motion.div 
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -362,10 +357,10 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Welcome Badge */}
+        {/* 👇 FIXED: Dynamic Welcome Badge */}
         <div className="hidden md:flex items-center gap-2 bg-[#022c16] text-[#4ade80] px-5 py-2.5 rounded-md shadow-sm">
           <CheckCircle2 className="w-4 h-4 fill-[#4ade80] text-[#022c16]" />
-          <span className="text-sm font-medium">Welcome, {username} ✨</span>
+          <span className="text-sm font-medium">Welcome{username ? `, ${username}` : ''} ✨</span>
         </div>
 
         <button onClick={() => setShowManual(true)} className="text-[#111111] hover:text-[#ff3f6c] text-sm font-medium transition-colors">
@@ -393,7 +388,6 @@ export default function OnboardingPage() {
               {currentQ.options.slice(0, 3).map((option, idx) => {
                 const isSelected = selectedOption === idx;
                 
-                // Fetch the unique image mapped specifically to this question and option index!
                 const bgImage = DYNAMIC_IMAGES[currentQ.key]?.[idx] || FALLBACK_OPTION_IMAGES[idx];
 
                 return (

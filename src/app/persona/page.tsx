@@ -28,16 +28,88 @@ function FemaleAvatar2D({ skinTone, hairStyle, bodyType }: { skinTone: string, h
       {/* --- LEGS & SHOES & NECK --- */}
       <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
       <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
-      <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" />
-      <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" />
-      <rect x="92" y="110" width="16" height="20" fill={skinTone} />
-
-      {/* --- DRESS / BODY --- */}
-      <path 
-        d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} 
-        fill="url(#dressGrad)" 
+      
+      {/* <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" /> */}
+      {/* <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" /> */}
+      
+      {/* Sneakers */}
+      <path
+        d="M76 278
+           Q88 272 100 278
+           L100 286
+           L76 286 Z"
+        fill="white"
       />
 
+      <path
+        d="M100 278
+           Q112 272 124 278
+           L124 286
+           L100 286 Z"
+        fill="white"
+      />
+
+      <line x1="82" y1="282" x2="94" y2="282" stroke="#999" strokeWidth="1.5" />
+      <line x1="106" y1="282" x2="118" y2="282" stroke="#999" strokeWidth="1.5" />
+      
+      {/* <rect x="92" y="110" width="16" height="20" fill={skinTone} /> */}
+      
+      <rect x="92" y="108" width="16" height="26" rx="6" fill={skinTone} />
+
+      {/* --- DRESS / BODY --- */}
+      {/* <path 
+        d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} 
+        fill="url(#dressGrad)" 
+      /> */}
+      
+      {/* Arms */}
+      <rect
+        x={100-bodyWidth/2-12}
+        y="126"
+        width="10"
+        height="62"
+        rx="6"
+        fill={skinTone}
+        transform={`rotate(8 ${100-bodyWidth/2-12} 126)`}
+      />
+
+      <rect
+        x={100+bodyWidth/2+2}
+        y="126"
+        width="10"
+        height="62"
+        rx="6"
+        fill={skinTone}
+        transform={`rotate(-8 ${100+bodyWidth/2+2} 126)`}
+      />
+      
+      {/* ================== HOODIE ================== */}
+      <path
+        d={`
+            M ${100-bodyWidth/2} 122
+            Q 100 112 ${100+bodyWidth/2} 122
+            L ${100+bodyWidth/2-6} 170
+            Q 100 180 ${100-bodyWidth/2+6} 170
+            Z
+        `}
+        fill="#FF3F6C"
+      />
+
+      {/* Hoodie Pocket */}
+      <rect x="82" y="148" width="36" height="18" rx="8" fill="#ff6b8f" />
+
+      {/* Hoodie Strings */}
+      <line x1="95" y1="118" x2="95" y2="140" stroke="white" strokeWidth="2" />
+      <line x1="105" y1="118" x2="105" y2="140" stroke="white" strokeWidth="2" />
+      
+      {/* ================= CARGO ================= */}
+      <rect x={100-bodyWidth/2+8} y="170" width={bodyWidth/2-10} height="55" rx="8" fill="#404040" />
+      <rect x="102" y="170" width={bodyWidth/2-10} height="55" rx="8" fill="#404040" />
+
+      {/* Cargo Pockets */}
+      <rect x={100-bodyWidth/2+12} y="188" width="10" height="12" rx="2" fill="#5A5A5A" />
+      <rect x={100+bodyWidth/2-22} y="188" width="10" height="12" rx="2" fill="#5A5A5A" />
+      
       {/* --- HEAD & FACE --- */}
       <circle cx="100" cy="80" r="38" fill={skinTone} />
       <circle cx="85" cy="80" r="3.5" fill="#111111" />

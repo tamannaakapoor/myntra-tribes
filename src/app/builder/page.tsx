@@ -54,7 +54,7 @@ function MiniAvatar({ skinTone, hairStyle, bodyType }: { skinTone: string, hairS
 
 export default function BuilderPage() {
   const router = useRouter();
-  const { themeConfig } = useTribeStore();
+  const { themeConfig, currentTribe } = useTribeStore();
   
   const [products, setProducts] = useState<Product[]>([]);
   const [canvasItems, setCanvasItems] = useState<Product[]>([]);
@@ -67,10 +67,8 @@ export default function BuilderPage() {
   const [tags, setTags] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   
-  // 👇 NEW: State to hold the user's avatar
   const [avatarConfig, setAvatarConfig] = useState<any>(null);
 
-  // ✨ BULLETPROOF API URL
   const getApiUrl = () => {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
     if (!url.endsWith("/api")) {
@@ -79,13 +77,9 @@ export default function BuilderPage() {
     return url;
   };
 
-  // -------------------------------------------------------------
-  // 🔌 FETCH PRODUCTS & AVATAR ON MOUNT
-  // -------------------------------------------------------------
   useEffect(() => {
     const token = localStorage.getItem('tribe_jwt');
 
-    // 1. Fetch Avatar
     const fetchAvatar = async () => {
       if (!token) return;
       try {
@@ -105,17 +99,26 @@ export default function BuilderPage() {
     };
     fetchAvatar();
 
-    // 2. Fetch Products
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const endpoint = searchQuery 
-          ? `${getApiUrl()}/products?search=${encodeURIComponent(searchQuery)}`
-          : `${getApiUrl()}/products`;
+        // 👇 FIXED: Simplified Slug Logic
+        const tribeSlug =
+          currentTribe && currentTribe !== "default"
+            ? currentTribe
+            : "neon-static";
+
+        let endpoint = `${getApiUrl()}/products?tribe=${encodeURIComponent(tribeSlug)}`;
+        
+        if (searchQuery) {
+          endpoint += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+
+        console.log("🚀 DEBUG - Fetching products from:", endpoint);
 
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Backend responded with an error");
-
+        
         const data = await res.json();
         let fetchedProducts = [];
         if (data.products && Array.isArray(data.products)) fetchedProducts = data.products;
@@ -145,12 +148,9 @@ export default function BuilderPage() {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, currentTribe]); // 👇 FIXED: Added currentTribe to dependency array!
 
   
-  // -------------------------------------------------------------
-  // 🚀 PUBLISH FUNCTION
-  // -------------------------------------------------------------
   const handlePublish = async () => {
     if (!title.trim()) return alert("Please give your lookbook a title!");
     if (canvasItems.length === 0) return alert("Please add at least one product to the canvas!");
@@ -198,9 +198,6 @@ export default function BuilderPage() {
     }
   };
 
-  // -------------------------------------------------------------
-  // 🎨 RESKIN ENGINE VARIABLES
-  // -------------------------------------------------------------
   const isDark = themeConfig?.mode === 'dark';
   const textColor = themeConfig?.text || '#111111';
   const accentColor = themeConfig?.accent || '#ff3f6c';
