@@ -1,8 +1,11 @@
+
+
 const supabase = require("../config/supabase");
 
 const authenticateUser = async (req, res, next) => {
   try {
-
+    console.log("=== Incoming Headers ===");
+  console.log(req.headers);
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {

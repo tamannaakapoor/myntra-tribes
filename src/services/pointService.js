@@ -3,7 +3,7 @@ const supabase = require("../config/supabase");
 const addPoints = async (userId, pointsToAdd) => {
   // Fetch current points
   const { data: profile, error } = await supabase
-    .from("profile")
+    .from("profiles")
     .select("points")
     .eq("id", userId)
     .single();
@@ -14,7 +14,7 @@ const addPoints = async (userId, pointsToAdd) => {
 
   // Update points
   const { error: updateError } = await supabase
-    .from("profile")
+    .from("profiles")
     .update({
       points: currentPoints + pointsToAdd,
     })
