@@ -1,13 +1,25 @@
+// const {
+//   getAvatarByUserId,
+//   createLookbook,
+//   addLookbookItems,
+//     getMyLookbooks,
+//       getLookbookById,
+//      getFeed: getFeedService,
+
+
+// } = require("../services/lookbookService");
+const { addPoints } = require("../services/pointService");
+
 const {
   getAvatarByUserId,
   createLookbook,
   addLookbookItems,
-    getMyLookbooks,
-      getLookbookById,
-     getFeed: getFeedService,
-
+  getMyLookbooks,
+  getLookbookById,
+  getFeed: getFeedService,
+  likeLookbook,
+  unlikeLookbook,
 } = require("../services/lookbookService");
-
 // POST /api/lookbooks
 const create = async (req, res) => {
   try {
@@ -47,6 +59,7 @@ const create = async (req, res) => {
 
     // Save selected products
     await addLookbookItems(lookbook.id, products);
+    await addPoints(req.user.id, 20);
 
     return res.status(201).json({
       success: true,
@@ -84,6 +97,31 @@ const getMine = async (req, res) => {
   }
 };
 
+// const getById = async (req, res) => {
+//   try {
+//     const lookbook = await getLookbookById(req.params.id);
+
+//     if (!lookbook) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Lookbook not found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       lookbook,
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
 const getById = async (req, res) => {
   try {
     const lookbook = await getLookbookById(req.params.id);
@@ -99,7 +137,6 @@ const getById = async (req, res) => {
       success: true,
       lookbook,
     });
-
   } catch (err) {
     console.error(err);
 
@@ -131,9 +168,68 @@ const getFeed = async (req, res) => {
     });
   }
 };
+
+const like = async (req,res)=>{
+
+    try{
+
+        // await lookbookService.likeLookbook(
+        //     req.user.id,
+        //     req.params.id
+        // );
+        await likeLookbook(
+    req.user.id,
+    req.params.id
+);
+        res.json({
+            success:true,
+            message:"Lookbook liked."
+        });
+
+    }catch(err){
+
+        res.status(400).json({
+            success:false,
+            message:err.message
+        });
+
+    }
+
+};
+
+const unlike = async (req,res)=>{
+
+    try{
+
+        // await lookbookService.unlikeLookbook(
+        //     req.user.id,
+        //     req.params.id
+        // );
+        await unlikeLookbook(
+    req.user.id,
+    req.params.id
+);
+
+        res.json({
+            success:true,
+            message:"Lookbook unliked."
+        });
+
+    }catch(err){
+
+        res.status(400).json({
+            success:false,
+            message:err.message
+        });
+
+    }
+
+};
 module.exports = {
   create,
   getMine,
   getById,
   getFeed,
+  like,
+  unlike,
 };

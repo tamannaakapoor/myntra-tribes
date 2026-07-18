@@ -2,7 +2,7 @@ const {
   createAvatar: createAvatarService,
   getMyAvatar,
 } = require("../services/avatarService");
-
+const { addPoints } = require("../services/pointService");
 const createAvatar = async (req, res) => {
   try {
     const {
@@ -26,14 +26,19 @@ const createAvatar = async (req, res) => {
       });
     }
 
-    const avatar = await createAvatarService({
-      userId: req.user.id,
-      name,
-      gender,
-      hair,
-      skin_color,
-      body_type,
-    });
+    const { avatar, isNew } = await createAvatarService({
+  userId: req.user.id,
+  name,
+  gender,
+  hair,
+  skin_color,
+  body_type,
+});
+
+if (isNew) {
+  await addPoints(req.user.id, 20);
+}
+        await addPoints(req.user.id, 20);
 
     return res.status(201).json({
       success: true,
@@ -58,7 +63,6 @@ const createAvatar = async (req, res) => {
     });
   }
 };
-
 const getCurrentUserAvatar = async (req, res) => {
   try {
     const avatar = await getMyAvatar(req.user.id);
