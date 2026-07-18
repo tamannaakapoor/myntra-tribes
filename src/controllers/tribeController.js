@@ -1,10 +1,11 @@
 
 const assignTribe = require("../services/tribeAssignmentService");
 const supabase = require("../config/supabase");
-
+const { addPoints } = require("../services/pointService");
 // POST /api/tribes/assign
 const assignUserTribe = async (req, res) => {
   try {
+    // await addPoints(req.user.id, 50);
 //     const answers = req.body;
 
 //     // Validate required quiz fields
@@ -214,7 +215,6 @@ const result = assignTribe(normalizedAnswers);
     });
   }
 };
-
 // GET /api/tribes
 const getAllTribes = async (req, res) => {
   try {

@@ -28,6 +28,8 @@ const {
   getMine,
   getById,
   getFeed,
+  like,
+  unlike,
 } = require("../controllers/lookbookController");
 
 // Public feed
@@ -44,5 +46,9 @@ router.get("/feed", getFeed);
 
 // Single lookbook
 router.get("/:id", getById);
+
+router.post("/:id/like",authenticateUser,like);
+
+router.delete("/:id/like",authenticateUser,unlike);
 
 module.exports = router;
