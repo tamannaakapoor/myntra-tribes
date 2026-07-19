@@ -1,9 +1,9 @@
 const express = require("express");
-
 const router = express.Router();
 
-const { autoWrite } = require("../controllers/aiController");
+const authenticateUser = require("../middleware/authMiddleware");
+const { autoWriteEditorial } = require("../controllers/aiController");
 
-router.post("/generate-caption", autoWrite);
+router.post("/editorial", authenticateUser, autoWriteEditorial);
 
 module.exports = router;

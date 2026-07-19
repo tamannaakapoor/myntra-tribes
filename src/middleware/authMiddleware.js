@@ -1,6 +1,7 @@
 
 
 const supabase = require("../config/supabase");
+// import supabase from "../config/supabase.js";
 
 const authenticateUser = async (req, res, next) => {
   try {
@@ -50,3 +51,4 @@ const authenticateUser = async (req, res, next) => {
 };
 
 module.exports = authenticateUser;
+// export default authenticateUser;
