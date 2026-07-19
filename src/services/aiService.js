@@ -1,47 +1,46 @@
 const { GoogleGenAI } = require("@google/genai");
 
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+    apiKey: process.env.GEMINI_API_KEY,
 });
 
-const generateCaption = async ({ items, tribe }) => {
-  const prompt = `
-You are a fashion influencer.
+const generateEditorial = async (items, tribe) => {
 
-Generate:
+    const prompt = `
+You are a fashion editor for Myntra.
 
-1. Catchy title (maximum 6 words)
-2. Instagram caption (2 sentences)
-3. Exactly 5 hashtags
-
-Items:
+Outfit Items:
 ${items.join(", ")}
 
-Tribe:
+User Tribe:
 ${tribe}
 
-Return ONLY valid JSON:
+Generate:
+1. Catchy title (max 6 words)
+2. Exactly 2 sentence caption
+3. Exactly 5 hashtags
+
+Return ONLY JSON.
 
 {
 "title":"",
-"caption":"",
-"hashtags":["","","","",""]
+"description":"",
+"hashtags":[]
 }
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: prompt,
-  });
+    const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            temperature: 0.9,
+        },
+    });
 
-  let text = response.text.trim();
-
-  // Remove Markdown code fences if Gemini wraps the JSON
-  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-  return JSON.parse(text);
+    return JSON.parse(response.text);
 };
 
 module.exports = {
-  generateCaption,
+    generateEditorial
 };

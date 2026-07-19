@@ -1,36 +1,33 @@
-const { generateCaption } = require("../services/aiService");
+const { generateEditorial } = require("../services/aiService");
 
-const autoWrite = async (req, res) => {
-  try {
-    const { items, tribe } = req.body;
+const autoWriteEditorial = async (req, res) => {
+    try {
+        const { items, tribe } = req.body;
 
-    if (!items || !tribe) {
-      return res.status(400).json({
-        success: false,
-        message: "items and tribe are required",
-      });
+        if (!items || !tribe) {
+            return res.status(400).json({
+                success: false,
+                message: "Items and tribe are required"
+            });
+        }
+
+        const editorial = await generateEditorial(items, tribe);
+
+        res.json({
+            success: true,
+            editorial
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
-
-    const result = await generateCaption({
-      items,
-      tribe,
-    });
-
-    return res.status(200).json({
-      success: true,
-      ...result,
-    });
-
-  } catch (err) {
-    console.error(err);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
 };
 
 module.exports = {
-  autoWrite,
+    autoWriteEditorial
 };
