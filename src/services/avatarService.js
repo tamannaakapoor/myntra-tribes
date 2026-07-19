@@ -76,6 +76,17 @@ const createAvatar = async ({
   hair,
   skin_color,
   body_type,
+  eye_type,
+  eyebrow_type,
+  mouth_type,
+
+  outfit_top,
+  outfit_bottom,
+
+  shoes,
+  accessory,
+
+  background,
 }) => {
 
   // Check if avatar already exists
@@ -113,6 +124,17 @@ const createAvatar = async ({
       hair,
       skin_color,
       body_type,
+      eye_type,
+  eyebrow_type,
+  mouth_type,
+
+  outfit_top,
+  outfit_bottom,
+
+  shoes,
+  accessory,
+
+  background,
     })
     .eq("id", existingAvatar.id)
     .select()
@@ -149,17 +171,45 @@ const createAvatar = async ({
 // };
 const { data, error } = await supabase
   .from("avatars")
+  // .insert({
+  //   user_id: userId,
+  //   name,
+  //   gender,
+  //   hair,
+  //   skin_color,
+  //   body_type,
+  //   follower_count: 0,
+  //   is_drop_active: false,
+  //   drop_ends_at: null,
+  // })
   .insert({
     user_id: userId,
+
     name,
     gender,
+
     hair,
+    hair_color,
+
     skin_color,
     body_type,
+
+    eye_type,
+    eyebrow_type,
+    mouth_type,
+
+    outfit_top,
+    outfit_bottom,
+
+    shoes,
+    accessory,
+
+    background,
+
     follower_count: 0,
     is_drop_active: false,
     drop_ends_at: null,
-  })
+})
   .select()
   .single();
 
@@ -252,19 +302,54 @@ const getMyAvatar = async (userId) => {
   //   tribe
 
   // };
-  return {
+//   return {
+//   id: avatar.id,
+//   name: avatar.name,
+//   gender: avatar.gender,
+//   hair: avatar.hair,
+//   skin_color: avatar.skin_color,
+//   body_type: avatar.body_type,
+
+//   follower_count: avatar.follower_count,
+
+//   username: profile?.username,
+
+//   tribe,
+// };
+return {
+
   id: avatar.id,
+
   name: avatar.name,
+
   gender: avatar.gender,
+
   hair: avatar.hair,
+  hair_color: avatar.hair_color,
+
   skin_color: avatar.skin_color,
+
   body_type: avatar.body_type,
+
+  eye_type: avatar.eye_type,
+  eyebrow_type: avatar.eyebrow_type,
+  mouth_type: avatar.mouth_type,
+
+  outfit_top: avatar.outfit_top,
+  outfit_bottom: avatar.outfit_bottom,
+
+  shoes: avatar.shoes,
+
+  accessory: avatar.accessory,
+
+  background: avatar.background,
 
   follower_count: avatar.follower_count,
 
   username: profile?.username,
 
   tribe,
+
 };
 };
 module.exports = {

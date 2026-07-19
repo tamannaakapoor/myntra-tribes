@@ -11,6 +11,14 @@ const createAvatar = async (req, res) => {
       hair,
       skin_color,
       body_type,
+    eye_type,
+    eyebrow_type,
+    mouth_type,
+    outfit_top,
+    outfit_bottom,
+    shoes,
+    accessory,
+    background
     } = req.body;
 
     if (
@@ -33,6 +41,16 @@ const createAvatar = async (req, res) => {
   hair,
   skin_color,
   body_type,
+  eye_type,
+  eyebrow_type,
+  mouth_type,
+
+  outfit_top,
+  outfit_bottom,
+  shoes,
+
+  accessory,
+  background,
 });
 
 if (isNew) {
@@ -42,15 +60,38 @@ if (isNew) {
     return res.status(201).json({
       success: true,
       message: "Avatar created successfully",
+      // avatar: {
+      //   id: avatar.id,
+      //   user_id: avatar.user_id,
+      //   name: avatar.name,
+      //   gender: avatar.gender,
+      //   hair: avatar.hair,
+      //   skin_color: avatar.skin_color,
+      //   body_type: avatar.body_type,
+      // },
       avatar: {
-        id: avatar.id,
-        user_id: avatar.user_id,
-        name: avatar.name,
-        gender: avatar.gender,
-        hair: avatar.hair,
-        skin_color: avatar.skin_color,
-        body_type: avatar.body_type,
-      },
+  id: avatar.id,
+  user_id: avatar.user_id,
+
+  name: avatar.name,
+
+  gender: avatar.gender,
+
+  hair: avatar.hair,
+  skin_color: avatar.skin_color,
+  body_type: avatar.body_type,
+
+  eye_type: avatar.eye_type,
+  eyebrow_type: avatar.eyebrow_type,
+  mouth_type: avatar.mouth_type,
+
+  outfit_top: avatar.outfit_top,
+  outfit_bottom: avatar.outfit_bottom,
+  shoes: avatar.shoes,
+
+  accessory: avatar.accessory,
+  background: avatar.background,
+},
     });
 
   } catch (err) {
