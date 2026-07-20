@@ -1,46 +1,44 @@
-const { GoogleGenAI } = require("@google/genai");
-// console.log("Gemini Key:", process.env.GEMINI_API_KEY);
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
+const Groq = require("groq-sdk");
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
-const generateEditorial = async (items, tribe) => {
+const generateEditorial = async (tribe, items) => {
+  const prompt = `
+You are a fashion editor.
 
-    const prompt = `
-You are a fashion editor for Myntra.
+User's Tribe: ${tribe}
 
-Outfit Items:
-${items.join(", ")}
+Products:
+${items.map((item, i) => `${i + 1}. ${item}`).join("\n")}
 
-User Tribe:
-${tribe}
-
-Generate:
-1. Catchy title (max 6 words)
-2. Exactly 2 sentence caption
-3. Exactly 5 hashtags
-
-Return ONLY JSON.
+Generate ONLY valid JSON:
 
 {
-"title":"",
-"description":"",
-"hashtags":[]
+  "title": "...",
+  "description": "...",
+  "hashtags": ["...", "...", "...", "...", "..."]
 }
 `;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            temperature: 0.9,
-        },
-    });
+  const completion = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    response_format: {
+      type: "json_object",
+    },
+  });
 
-    return JSON.parse(response.text);
+  return JSON.parse(completion.choices[0].message.content);
 };
 
 module.exports = {
-    generateEditorial
+  generateEditorial,
 };

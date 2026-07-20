@@ -1,33 +1,21 @@
 const { generateEditorial } = require("../services/aiService");
 
-const autoWriteEditorial = async (req, res) => {
-    try {
-        const { items, tribe } = req.body;
+exports.generateAIEditorial = async (req, res) => {
+  try {
+    const { tribe, items } = req.body;
 
-        if (!items || !tribe) {
-            return res.status(400).json({
-                success: false,
-                message: "Items and tribe are required"
-            });
-        }
+    const editorial = await generateEditorial(tribe, items);
 
-        const editorial = await generateEditorial(items, tribe);
+    res.json({
+      success: true,
+      editorial,
+    });
+  } catch (err) {
+    console.error(err);
 
-        res.json({
-            success: true,
-            editorial
-        });
-
-    } catch (err) {
-        console.error(err);
-
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-};
-
-module.exports = {
-    autoWriteEditorial
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate editorial",
+    });
+  }
 };

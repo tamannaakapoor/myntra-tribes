@@ -10,10 +10,17 @@ const app = require("./app");
 
 //   credentials: true,
 // }));
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://myntra-tribes.vercel.app",
-];
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "https://myntra-tribes.vercel.app",
+// ];
+app.use(cors({
+    origin: [
+        "https://myntra-tribes.vercel.app",
+        "http://localhost:3000"
+    ],
+    credentials: true
+}));
 
 app.use(
   cors({
