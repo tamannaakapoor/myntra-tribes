@@ -1,5 +1,4 @@
-const { supabase } = require("../config/supabase");
-
+const supabase = require("../config/supabase");
 exports.saveTrueFit = async (req, res) => {
     try {
         const userId = req.user.id;
@@ -53,10 +52,15 @@ exports.saveTrueFit = async (req, res) => {
     } catch (error) {
         console.error("TrueFit Save Error:", error);
 
+        // return res.status(500).json({
+        //     success: false,
+        //     message: "Failed to save TrueFit profile.",
+        // });
         return res.status(500).json({
-            success: false,
-            message: "Failed to save TrueFit profile.",
-        });
+        success: false,
+        message: error.message,
+        error,
+    });
     }
 };
 
