@@ -80,4 +80,52 @@ router.get("/me", authenticateUser, async (req, res) => {
 
     }
 });
+
+
+router.post("/tribe", authenticateUser, async (req, res) => {
+    try {
+
+        const { tribe } = req.body;
+
+        // Find tribe by name
+        const { data: tribeRow, error: tribeError } = await supabase
+            .from("tribes")
+            .select("id, name")
+            .eq("name", tribe)
+            .single();
+
+        if (tribeError) throw tribeError;
+
+        // Update profile
+        const { data: profile, error } = await supabase
+            .from("profiles")
+            .update({
+                active_tribe_id: tribeRow.id
+            })
+            .eq("id", req.user.id)
+            .select(`
+                id,
+                username,
+                active_tribe_id
+            `)
+            .single();
+
+        if (error) throw error;
+
+        return res.json({
+            success: true,
+            profile
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
+
+    }
+});
 module.exports = router;
