@@ -1,5 +1,5 @@
 const { GoogleGenAI } = require("@google/genai");
-console.log("Gemini Key:", process.env.GEMINI_API_KEY);
+// console.log("Gemini Key:", process.env.GEMINI_API_KEY);
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY,
 });
@@ -30,7 +30,7 @@ Return ONLY JSON.
 `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
