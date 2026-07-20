@@ -22,21 +22,21 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests without an Origin (e.g. Postman)
-      if (!origin) return callback(null, true);
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       // Allow requests without an Origin (e.g. Postman)
+//       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+//       if (allowedOrigins.includes(origin)) {
+//         return callback(null, true);
+//       }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+//       return callback(new Error("Not allowed by CORS"));
+//     },
+//     credentials: true,
+//   })
+// );
 
 app.use(express.json());
 const tribeRoutes = require("./routes/tribeRoutes");
