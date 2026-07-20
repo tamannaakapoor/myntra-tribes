@@ -53,7 +53,7 @@ const leaderboardRoutes =require("./routes/leaderboardRoutes");
 const aiRoutes = require("./routes/aiRoutes");
 const voteRoutes = require("./routes/voteRoutes");
 const gelaphaRoutes = require("./routes/gelaphaRoutes");
-const trueFitRoutes = require("./routes/truefitRoutes");
+const truefitRoutes = require("./routes/truefitRoutes");
 
 app.use("/api/truefit", truefitRoutes);
 
