@@ -6,10 +6,21 @@ const ai = new GoogleGenAI({
 });
 
 async function main() {
-  const models = await ai.models.list();
+  try {
+    const pager = await ai.models.list();
 
-  for await (const model of models) {
-    console.log(model.name);
+    console.log("Available Models:\n");
+
+    for await (const model of pager) {
+      console.log("--------------------------------");
+      console.log("Name:", model.name);
+      console.log("Display Name:", model.displayName);
+      console.log("Description:", model.description);
+      console.log("Supported Actions:", model.supportedActions);
+      console.log();
+    }
+  } catch (err) {
+    console.error(err);
   }
 }
 
