@@ -1,13 +1,16 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const authenticateToken = require('../middleware/authMiddleware');
-const { saveTrueFit, getTrueFit } = require('../controllers/truefitController');
+const authenticateUser = require("../middleware/authMiddleware");
+const {
+    saveTrueFit,
+    getTrueFit,
+} = require("../controllers/truefitController");
 
 // Save TrueFit profile
-router.post('/save', authenticateToken, saveTrueFit);
+router.post("/save", authenticateUser, saveTrueFit);
 
 // Fetch logged-in user's TrueFit profile
-router.get('/me', authenticateToken, getTrueFit);
+router.get("/me", authenticateUser, getTrueFit);
 
 module.exports = router;
