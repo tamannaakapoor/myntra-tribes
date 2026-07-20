@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTribeStore } from '@/store/useTribeStore';
-import { Heart, ThumbsUp, Bookmark, ArrowLeft, Search, Loader2, Plus, Flame, Zap } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
+import { Heart, ThumbsUp, Bookmark, ArrowLeft, Search, Loader2, Plus, Flame, Zap, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- 👇 DYNAMIC MINI AVATAR COMPONENT ---
@@ -43,43 +44,73 @@ function MiniAvatar2D({ skinTone, hairStyle, bodyType = 'Slim' }: { skinTone: st
   );
 }
 
-// --- MOCK DATA (Fallback to keep the feed looking full) ---
+// --- 👇 MASSIVELY EXPANDED VIBE IMAGES ---
+const TRIBE_IMAGES = {
+  'Neon Static': [
+    'https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=735&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1608690158878-1a96b29b455b?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?q=80&w=400&auto=format&fit=crop'
+  ],
+  'Vault Heir': [
+    'https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=1074&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1524805444758-089113d48a6d?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1572804013309-82a88b22e1b1?q=80&w=400&auto=format&fit=crop'
+  ],
+  'Golden Hour': [
+    'https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=687&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1518057111178-44a106bad636?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1507501336603-6e31db2be093?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1550614000-4b95d4ebf048?q=80&w=400&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=400&auto=format&fit=crop'
+  ]
+};
+
+// Fallback clothing items in case the backend doesn't send the product image
+const FALLBACK_PRODUCTS = [
+  'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1560343090-f0409e92791a?q=80&w=400&auto=format&fit=crop',
+];
+
+const getTribeImage = (tribeName: string, lookbookId: string) => {
+  const idString = lookbookId ? String(lookbookId) : "fallback";
+  const hash = idString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  if (tribeName.includes('Neon')) return TRIBE_IMAGES['Neon Static'][hash % TRIBE_IMAGES['Neon Static'].length];
+  if (tribeName.includes('Vault')) return TRIBE_IMAGES['Vault Heir'][hash % TRIBE_IMAGES['Vault Heir'].length];
+  return TRIBE_IMAGES['Golden Hour'][hash % TRIBE_IMAGES['Golden Hour'].length];
+};
+
+// --- MOCK DATA (Updated to reflect actual DB schema) ---
 const FEED_MOCK = [
   {
-    id: 'mock-1', title: "Sun-Kissed Silks", handle: "@ananya_style", pieces: 4,
-    desc: "Draped in golden hour glow. Effortless sunset energy.",
+    id: 'mock-1', title: "Summer Breeze", handle: "@ananya_style", pieces: 2,
+    desc: "Flutter sleeves and maxi lengths for the perfect summer day.",
     tribe: "Golden Hour", likes: 84, loves: 241, saves: 45, skin: "#C29270", hair: "Long", bodyType: "Slim",
-    images: ["https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=400&auto=format&fit=crop"]
+    productImage: "https://assets.myntassets.com/dpr_2,q_60,w_210,c_limit,fl_progressive/assets/images/2026/MAY/15/c4UY2Jlc_db36b99333b942c29e8fe70205d2a308.jpg",
+    featuredProduct: { brand: "DressBerry", discount: "(61% OFF)" }
   },
   {
     id: 'mock-2', title: "Midnight Cyber", handle: "@kavya_neon", pieces: 5,
     desc: "Holographic textures and dark streets. Main character activated.",
     tribe: "Neon Static", likes: 112, loves: 305, saves: 89, skin: "#8A5A44", hair: "Bob", bodyType: "Slim",
-    images: ["https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop"]
+    productImage: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop",
+    featuredProduct: { brand: "Roadster", discount: "(40% OFF)" }
   },
   {
     id: 'mock-3', title: "Vintage Archive", handle: "@priya_y2k", pieces: 3,
     desc: "Rifling through the 90s archive. Denim on denim.",
     tribe: "Vault Heir", likes: 67, loves: 189, saves: 32, skin: "#F3D9C6", hair: "Long", bodyType: "Athletic",
-    images: ["https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=400&auto=format&fit=crop"]
-  },
-  {
-    id: 'mock-4', title: "Ethereal Morning", handle: "@sneha_vibes", pieces: 4,
-    desc: "Soft linen and warm light to start the day.",
-    tribe: "Golden Hour", likes: 95, loves: 210, saves: 56, skin: "#4A2E2B", hair: "Bun", bodyType: "Curvy",
-    images: ["https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1518057111178-44a106bad636?q=80&w=600&auto=format&fit=crop"]
-  },
-  {
-    id: 'mock-5', title: "Electric Pulse", handle: "@ishita_fits", pieces: 6,
-    desc: "High contrast, high energy. Built for the underground.",
-    tribe: "Neon Static", likes: 156, loves: 420, saves: 112, skin: "#C29270", hair: "Long", bodyType: "Slim",
-    images: ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"]
-  },
-  {
-    id: 'mock-6', title: "Heirloom Denim", handle: "@riya_retro", pieces: 3,
-    desc: "Bringing back the 2000s silhouettes. Low rise only.",
-    tribe: "Vault Heir", likes: 78, loves: 145, saves: 28, skin: "#8A5A44", hair: "Bob", bodyType: "Athletic",
-    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=400&auto=format&fit=crop"]
+    productImage: "https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=400&auto=format&fit=crop",
+    featuredProduct: { brand: "Levis", discount: "(15% OFF)" }
   }
 ];
 
@@ -88,8 +119,9 @@ const TRIBES = ["All Tribes", "✨ Golden Hour", "🔥 Neon Static", "🦋 Vault
 export default function FeedPage() {
   const router = useRouter();
   const themeConfig = useTribeStore((state) => state.themeConfig);
-const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || 'golden-hour');
+  const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || 'golden-hour');
   
+  const cartCount = useCartStore((state) => state.getTotalItems());
   const [activeTribe, setActiveTribe] = useState("All Tribes");
   const [combinedFeed, setCombinedFeed] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,7 +146,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
           liveUsername = userObj.username || userObj.name || 'creator';
         }
 
-        // 1. Fetch User's Avatar for their live posts
         if (token) {
           const avatarRes = await fetch(`${getApiUrl()}/avatar/me`, { headers: { "Authorization": `Bearer ${token}` }});
           if (avatarRes.ok) {
@@ -124,7 +155,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
           }
         }
 
-        // 2. Fetch Live Lookbooks
         if (token) {
           const lookbooksRes = await fetch(`${getApiUrl()}/lookbooks`, { headers: { "Authorization": `Bearer ${token}` }});
           if (lookbooksRes.ok) {
@@ -132,24 +162,23 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
             const liveBooks = lookbooksData.lookbooks || lookbooksData.data || lookbooksData;
             
             if (Array.isArray(liveBooks)) {
-              // Map the live DB data into our UI structure
               const formattedLivePosts = liveBooks.map((lb: any) => {
                 
-                // Try to safely extract images from the products array
-                let images: string[] = [];
-                if (Array.isArray(lb.products)) {
-                  images = lb.products
-                    .map((p: any) => typeof p === 'string' ? null : p.image_url)
-                    .filter(Boolean)
-                    .slice(0, 2);
-                }
+                const idHash = (lb.id || "fallback").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                 
-                // Fallback image if backend just stored string UUIDs
-                if (images.length === 0) {
-                  images = ["https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=400&auto=format&fit=crop"];
+                // 👇 Extract the actual rich Myntra product object from the DB
+                let featuredProductObj = null;
+                let firstProductImg = FALLBACK_PRODUCTS[idHash % FALLBACK_PRODUCTS.length];
+                
+                if (Array.isArray(lb.products) && lb.products.length > 0) {
+                  // Find the first valid product object that has an image_url
+                  const validProducts = lb.products.filter((p: any) => typeof p === 'object' && p !== null && p.image_url);
+                  if (validProducts.length > 0) {
+                    featuredProductObj = validProducts[0];
+                    firstProductImg = featuredProductObj.image_url;
+                  }
                 }
 
-                // Determine Tribe mapping
                 let mappedTribe = "Golden Hour";
                 if (globalTribe === 'neon-static') mappedTribe = "Neon Static";
                 if (globalTribe === 'vault-heir') mappedTribe = "Vault Heir";
@@ -161,17 +190,17 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
                   pieces: Array.isArray(lb.products) ? lb.products.length : 0,
                   desc: lb.description || "",
                   tribe: mappedTribe,
-                  likes: Math.floor(Math.random() * 50), // Mock interactions for now
+                  likes: Math.floor(Math.random() * 50),
                   loves: Math.floor(Math.random() * 50),
                   saves: Math.floor(Math.random() * 20),
                   skin: liveAvatar.skin_color,
                   hair: liveAvatar.hair,
                   bodyType: liveAvatar.body_type,
-                  images: images
+                  productImage: firstProductImg,
+                  featuredProduct: featuredProductObj // Attach the full DB object here
                 };
               });
 
-              // Merge live posts on top of the mock fallback data!
               setCombinedFeed([...formattedLivePosts.reverse(), ...FEED_MOCK]);
               setIsLoading(false);
               return;
@@ -182,7 +211,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
         console.warn("Could not fetch live feed. Loading mock data.");
       }
       
-      // Fallback if APIs fail
       setCombinedFeed(FEED_MOCK);
       setIsLoading(false);
     };
@@ -197,7 +225,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans pb-20">
       
-      {/* Navbar */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-[#FBCFE8]/50 h-20 flex items-center px-6">
         <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/dashboard')}>
@@ -214,13 +241,20 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
             <button onClick={() => router.push('/builder')} className="bg-[#ff3f6c] text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 hover:bg-[#E11D48] shadow-md shadow-[#ff3f6c]/20">
               <Plus className="w-4 h-4" /> Create
             </button>
+            <button onClick={() => router.push('/checkout')} className="relative p-2 hover:bg-black/5 rounded-full transition-colors ml-4">
+              <ShoppingBag className="w-5 h-5 text-[#111111]" />
+              {cartCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </div>
+              )}
+            </button>
           </div>
         </div>
       </nav>
 
       <div className="max-w-[1400px] mx-auto px-6 pt-32">
         
-        {/* Header Area */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
           <div>
             <p className="text-[10px] font-bold tracking-[0.25em] text-[#ff3f6c] uppercase mb-2">Creator Feed</p>
@@ -232,7 +266,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
           </div>
         </div>
 
-        {/* Filter Pills */}
         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-10 pb-2">
           {TRIBES.map(t => (
             <button 
@@ -246,7 +279,6 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
           ))}
         </div>
 
-        {/* Lookbooks Grid */}
         {isLoading ? (
            <div className="flex flex-col items-center justify-center py-20 gap-4">
              <Loader2 className="w-8 h-8 animate-spin text-[#ff3f6c]" />
@@ -260,25 +292,46 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={look.id} 
-                  className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-[#FBCFE8]/30 group cursor-pointer"
+                  onClick={() => router.push(`/lookbook/${look.id}`)}
+                  className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#FBCFE8]/30 group cursor-pointer hover:-translate-y-1"
                 >
                   
-                  {/* Image Collage with mini avatar overlay */}
-                  <div className="h-[320px] w-full bg-gradient-to-tr from-[#ff99b3]/20 to-[#FBCFE8]/40 p-2 flex gap-2 relative">
-                    {look.images.length > 1 ? (
-                      <>
-                        <div className="w-1/2 h-full rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url('${look.images[0]}')` }} />
-                        <div className="w-1/2 h-full rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url('${look.images[1]}')` }} />
-                      </>
-                    ) : (
-                      <div className="w-full h-full rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url('${look.images[0]}')` }} />
-                    )}
+                  <div className="h-[320px] w-full p-2 flex gap-2 relative bg-white">
                     
-                    {/* The Avatar Overlay! */}
+                    {/* Left Side: Tribe Vibe Aesthetic */}
+                    <div 
+                      className="w-1/2 h-full rounded-2xl bg-cover bg-center relative overflow-hidden group-hover:brightness-95 transition-all" 
+                      style={{ backgroundImage: `url('${getTribeImage(look.tribe, look.id)}')` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute bottom-3 left-3 bg-white/20 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-bold text-white tracking-widest uppercase border border-white/20 shadow-sm">
+                        {look.tribe}
+                      </div>
+                    </div>
+
+                    {/* 👇 FIXED: Right Side Product Image with Myntra Brand Badges */}
+                    <div 
+                      className="w-1/2 h-full rounded-2xl bg-cover bg-center relative overflow-hidden bg-black/5" 
+                      style={{ backgroundImage: `url('${look.productImage}')` }}
+                    >
+                      {/* Show the Brand name tag if it exists in the DB */}
+                      {look.featuredProduct?.brand && (
+                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[9px] font-bold text-[#111111] uppercase tracking-wider shadow-sm">
+                          {look.featuredProduct.brand}
+                        </div>
+                      )}
+
+                      {/* Show the Discount badge if it exists in the DB */}
+                      {look.featuredProduct?.discount && look.featuredProduct.discount.includes('%') && (
+                        <div className="absolute bottom-3 right-3 bg-[#ff3f6c] px-2 py-1 rounded-md text-[10px] font-bold text-white shadow-sm">
+                          {look.featuredProduct.discount}
+                        </div>
+                      )}
+                    </div>
+                    
                     <MiniAvatar2D skinTone={look.skin} hairStyle={look.hair} bodyType={look.bodyType} />
                   </div>
 
-                  {/* Content */}
                   <div className="p-6 relative bg-white">
                     <h3 className="text-xl font-bold mb-1" style={{ fontFamily: 'Georgia, serif' }}>{look.title}</h3>
                     <p className="text-xs text-[#888888] mb-3">{look.handle} • {look.pieces} pieces</p>
@@ -286,11 +339,10 @@ const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || '
                     
                     <div className="flex items-center justify-between pt-2">
                       <div className="flex items-center gap-4 text-[#888888] text-sm font-medium">
-                        <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><ThumbsUp className="w-4 h-4" /> {look.likes}</span>
-                        <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><Heart className="w-4 h-4" /> {look.loves}</span>
-                        <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><Bookmark className="w-4 h-4" /> {look.saves}</span>
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><ThumbsUp className="w-4 h-4" /> {look.likes}</span>
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><Heart className="w-4 h-4" /> {look.loves}</span>
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><Bookmark className="w-4 h-4" /> {look.saves}</span>
                       </div>
-                      <span className="text-[10px] font-bold bg-[#FFF5F8] text-[#ff3f6c] px-2 py-1 rounded-md">{look.tribe}</span>
                     </div>
                   </div>
                 </motion.div>

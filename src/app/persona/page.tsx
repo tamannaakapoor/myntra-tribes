@@ -2,350 +2,335 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Ruler, Weight, UserCircle2, Scissors, CheckCircle2, AlertCircle, Loader2, Activity } from 'lucide-react';
 
-// --- DYNAMIC 2D AVATAR COMPONENT ---
-function FemaleAvatar2D({ skinTone, hairStyle, bodyType }: { skinTone: string, hairStyle: string, bodyType: string }) {
-  const bodyWidth = bodyType === 'Slim' ? 70 : bodyType === 'Athletic' ? 85 : bodyType === 'Curvy' ? 105 : 125;
-
-  return (
-    <svg viewBox="0 0 200 300" className="w-full h-full max-w-[300px] drop-shadow-sm">
-      <defs>
-        <linearGradient id="dressGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#ff4d79" />
-          <stop offset="100%" stopColor="#ff99b3" />
-        </linearGradient>
-      </defs>
-
-      {/* --- HAIR (BACK LAYER) --- */}
-      {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
-      {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
-      {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
-      {hairStyle === 'Curly' && (
-        <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />
-      )}
-
-      {/* --- LEGS & SHOES & NECK --- */}
-      <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
-      <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
-      
-      {/* <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" /> */}
-      {/* <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" /> */}
-      
-      {/* Sneakers */}
-      <path
-        d="M76 278
-           Q88 272 100 278
-           L100 286
-           L76 286 Z"
-        fill="white"
-      />
-
-      <path
-        d="M100 278
-           Q112 272 124 278
-           L124 286
-           L100 286 Z"
-        fill="white"
-      />
-
-      <line x1="82" y1="282" x2="94" y2="282" stroke="#999" strokeWidth="1.5" />
-      <line x1="106" y1="282" x2="118" y2="282" stroke="#999" strokeWidth="1.5" />
-      
-      {/* <rect x="92" y="110" width="16" height="20" fill={skinTone} /> */}
-      
-      <rect x="92" y="108" width="16" height="26" rx="6" fill={skinTone} />
-
-      {/* --- DRESS / BODY --- */}
-      {/* <path 
-        d={`M ${100 - bodyWidth/2} 125 L ${100 + bodyWidth/2} 125 L ${100 + bodyWidth/2 - 5} 220 L ${100 - bodyWidth/2 + 5} 220 Z`} 
-        fill="url(#dressGrad)" 
-      /> */}
-      
-      {/* Arms */}
-      <rect
-        x={100-bodyWidth/2-12}
-        y="126"
-        width="10"
-        height="62"
-        rx="6"
-        fill={skinTone}
-        transform={`rotate(8 ${100-bodyWidth/2-12} 126)`}
-      />
-
-      <rect
-        x={100+bodyWidth/2+2}
-        y="126"
-        width="10"
-        height="62"
-        rx="6"
-        fill={skinTone}
-        transform={`rotate(-8 ${100+bodyWidth/2+2} 126)`}
-      />
-      
-      {/* ================== HOODIE ================== */}
-      <path
-        d={`
-            M ${100-bodyWidth/2} 122
-            Q 100 112 ${100+bodyWidth/2} 122
-            L ${100+bodyWidth/2-6} 170
-            Q 100 180 ${100-bodyWidth/2+6} 170
-            Z
-        `}
-        fill="#FF3F6C"
-      />
-
-      {/* Hoodie Pocket */}
-      <rect x="82" y="148" width="36" height="18" rx="8" fill="#ff6b8f" />
-
-      {/* Hoodie Strings */}
-      <line x1="95" y1="118" x2="95" y2="140" stroke="white" strokeWidth="2" />
-      <line x1="105" y1="118" x2="105" y2="140" stroke="white" strokeWidth="2" />
-      
-      {/* ================= CARGO ================= */}
-      <rect x={100-bodyWidth/2+8} y="170" width={bodyWidth/2-10} height="55" rx="8" fill="#404040" />
-      <rect x="102" y="170" width={bodyWidth/2-10} height="55" rx="8" fill="#404040" />
-
-      {/* Cargo Pockets */}
-      <rect x={100-bodyWidth/2+12} y="188" width="10" height="12" rx="2" fill="#5A5A5A" />
-      <rect x={100+bodyWidth/2-22} y="188" width="10" height="12" rx="2" fill="#5A5A5A" />
-      
-      {/* --- HEAD & FACE --- */}
-      <circle cx="100" cy="80" r="38" fill={skinTone} />
-      <circle cx="85" cy="80" r="3.5" fill="#111111" />
-      <circle cx="115" cy="80" r="3.5" fill="#111111" />
-      <circle cx="72" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
-      <circle cx="128" cy="88" r="5" fill="#ff4d79" opacity="0.4" />
-      <path d="M 92 92 Q 100 100 108 92" stroke="#ff4d79" strokeWidth="2.5" fill="transparent" strokeLinecap="round" />
-
-      {/* --- HAIR (FRONT BANGS) --- */}
-      {hairStyle !== 'Buzz' && (
-        <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />
-      )}
-      {hairStyle === 'Buzz' && (
-        <path d="M 62 80 A 38 38 0 0 1 138 80 A 40 40 0 0 0 62 80 Z" fill="#2C1B18" opacity="0.8" />
-      )}
-    </svg>
-  );
-}
-
-export default function PersonaPage() {
+export default function TrueFitPage() {
   const router = useRouter();
-  
+
+  // --- STATE ---
   const [isLoading, setIsLoading] = useState(false);
-  
-  // State matches EXACTLY what Aditi requested in the API document
-  const [avatarState, setAvatarState] = useState({
-    name: 'My Avatar',
-    gender: 'Female', 
-    skin_color: '#F3D9C6',
-    hair: 'Bob',
-    body_type: 'Slim'
-  });
+  const [isSaved, setIsSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const skinTones = ['#F5D0C5', '#F3D9C6', '#C29270', '#8A5A44', '#4A2E2B'];
-  const bodyTypes = ['Slim', 'Athletic', 'Curvy', 'Plus'];
-  const hairStyles = ['Long', 'Bob', 'Bun', 'Curly', 'Buzz'];
+  // Measurement State
+  const [height, setHeight] = useState(165); // cm
+  const [weight, setWeight] = useState(60);  // kg
+  const [shape, setShape] = useState('Hourglass');
+  const [fit, setFit] = useState('Regular');
 
-  // ✨ BULLETPROOF API URL
+  // Recommendation State
+  const [topSize, setTopSize] = useState('M');
+  const [bottomSize, setBottomSize] = useState('M');
+
+  const shapes = ['Hourglass', 'Pear', 'Inverted Triangle', 'Rectangle'];
+  const fits = ['Tailored', 'Regular', 'Oversized'];
+
   const getApiUrl = () => {
-    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
-    if (!url.endsWith("/api")) {
-      url = `${url.replace(/\/$/, "")}/api`;
-    }
+    let url = process.env.NEXT_PUBLIC_API_URL || 'https://myntra-tribes.onrender.com/api';
+    if (!url.endsWith('/api')) url = `${url.replace(/\/$/, '')}/api`;
     return url;
   };
 
-  // On mount, load the username and fetch existing avatar
+  // --- THE TRUEFIT ALGORITHM ---
   useEffect(() => {
-    const userStr = localStorage.getItem('tribe_user');
-    let localName = 'My Avatar';
+    // 1. Calculate Base Size using BMI
+    const heightInMeters = height / 100;
+    const bmi = weight / (heightInMeters * heightInMeters);
     
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.username || user.name) {
-          localName = user.username || user.name;
-          setAvatarState(prev => ({ ...prev, name: localName }));
-        }
-      } catch (e) {}
-    }
+    let base = 'M';
+    if (bmi < 18.5) base = 'XS';
+    else if (bmi >= 18.5 && bmi < 22) base = 'S';
+    else if (bmi >= 22 && bmi < 25) base = 'M';
+    else if (bmi >= 25 && bmi < 29) base = 'L';
+    else if (bmi >= 29 && bmi < 33) base = 'XL';
+    else base = 'XXL';
 
-    const fetchExistingAvatar = async () => {
-      const token = localStorage.getItem('tribe_jwt');
-      if (!token) return;
+    const sizeLadder = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    const baseIndex = sizeLadder.indexOf(base);
 
-      try {
-        const res = await fetch(`${getApiUrl()}/avatar/me`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await res.json();
-        
-        // Populate the studio with their saved choices!
-        const savedAvatar = data.avatar || data.data || data;
-        if (res.ok && savedAvatar && savedAvatar.skin_color) {
-          setAvatarState({
-            name: savedAvatar.name || localName,
-            gender: savedAvatar.gender || 'Female',
-            skin_color: savedAvatar.skin_color || '#F3D9C6',
-            hair: savedAvatar.hair || 'Bob',
-            body_type: savedAvatar.body_type || 'Slim'
-          });
-        }
-      } catch (error) {
-        console.warn("No existing avatar found, starting fresh.");
-      }
+    const shiftSize = (index: number, shift: number) => {
+      const newIndex = Math.max(0, Math.min(sizeLadder.length - 1, index + shift));
+      return sizeLadder[newIndex];
     };
 
-    fetchExistingAvatar();
+    let calcTop = base;
+    let calcBottom = base;
+
+    // 2. Adjust for Proportions
+    if (shape === 'Pear') calcBottom = shiftSize(baseIndex, 1);
+    else if (shape === 'Inverted Triangle') calcTop = shiftSize(baseIndex, 1);
+    else if (shape === 'Rectangle') calcBottom = shiftSize(baseIndex, 0); 
+
+    // 3. Adjust for Preference
+    if (fit === 'Oversized') {
+      calcTop = shiftSize(sizeLadder.indexOf(calcTop), 1);
+      calcBottom = shiftSize(sizeLadder.indexOf(calcBottom), 1);
+    } else if (fit === 'Tailored') {
+      calcTop = shiftSize(sizeLadder.indexOf(calcTop), 0);
+    }
+
+    setTopSize(calcTop);
+    setBottomSize(calcBottom);
+  }, [height, weight, shape, fit]);
+
+  // --- FETCH EXISTING DATA ---
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('tribe_jwt');
+      if (!token) return;
+      try {
+        const res = await fetch(`${getApiUrl()}/truefit/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setHeight(data.profile.height);
+            setWeight(data.profile.weight);
+            setShape(data.profile.body_shape);
+            setFit(data.profile.fit_preference);
+          }
+        }
+      } catch (error) {
+        console.log("No profile found, using defaults.");
+      }
+    };
+    fetchProfile();
   }, []);
 
+  // --- SAVE TO BACKEND ---
   const handleSave = async () => {
     setIsLoading(true);
+    setErrorMsg(null);
+
+    const payload = { height, weight, body_shape: shape, fit_preference: fit, top_size: topSize, bottom_size: bottomSize };
 
     try {
       const token = localStorage.getItem('tribe_jwt');
-
-      console.log("🚀 DEBUG - Saving Avatar Payload:", JSON.stringify(avatarState));
-
-      const response = await fetch(`${getApiUrl()}/avatar/create`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify(avatarState) // Matches docs perfectly
+      const response = await fetch(`${getApiUrl()}/truefit/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("🛑 Backend rejected the avatar:", errorText);
-        // We push anyway so you don't get stuck if the backend isn't ready
-        router.push('/dashboard');
-        return;
-      }
-
-      const data = await response.json();
-      console.log("🚀 DEBUG - Avatar API Response:", data);
-
-      if (data.success || response.ok) {
-        router.push('/dashboard');
+      if (response.ok) {
+        setIsSaved(true);
+        setTimeout(() => router.push('/dashboard'), 2000);
       } else {
-        alert(data.message || "Failed to save avatar");
+        setErrorMsg('Failed to sync with TrueFit servers.');
       }
     } catch (error) {
-      console.warn("Avatar API unreachable, returning to dashboard.");
-      router.push('/dashboard');
+      console.error('API Error:', error);
+      setIsSaved(true);
+      setTimeout(() => router.push('/dashboard'), 2000);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Math mapping for the dynamic visualizer silhouette
+  // Bounds ensure it doesn't break the UI layout, but visually scales accurately
+  const dynamicScaleY = 0.8 + ((height - 140) / 70) * 0.4; // 140cm to 210cm
+  const dynamicScaleX = 0.8 + ((weight - 40) / 90) * 0.6;  // 40kg to 130kg
+
   return (
-    <main className="min-h-screen bg-[#FFF5F8] px-6 py-10 md:px-12 md:py-16 font-sans text-[#111111]">
-      <div className="max-w-[1200px] mx-auto">
+    <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans relative overflow-x-hidden pb-20">
+      
+      {/* Background Aesthetic */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#ff3f6c]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#8A2BE2]/5 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
+
+      <div className="max-w-[1400px] mx-auto px-6 pt-12 md:pt-20 relative z-10">
         
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center gap-2 text-sm font-medium mb-8 hover:text-[#ff3f6c] transition-colors w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold mb-8 text-[#888888] hover:text-[#111111] transition-colors w-fit">
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
-        
-        <span className="text-[10px] font-bold tracking-[0.2em] uppercase mb-2 block text-[#ff3f6c]">
-          Avatar Studio
-        </span>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-12" style={{ fontFamily: 'Georgia, serif' }}>
-          Design your avatar
-        </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="mb-12">
+          <span className="text-[10px] font-bold tracking-[0.3em] uppercase mb-3 block text-[#ff3f6c] flex items-center gap-2">
+            <Activity className="w-4 h-4" /> Myntra Algorithmic Sizing
+          </span>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4" style={{ fontFamily: 'Georgia, serif' }}>
+            TrueFit Engine.
+          </h1>
+          <p className="text-[#666666] text-lg max-w-2xl">
+            Input your metrics and let pure math calculate your exact fit. The dynamic mesh adapts in real-time, mapping your geometry to the Myntra master catalog.
+          </p>
+        </div>
+
+        {/* 3-COLUMN LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT: 2D AVATAR PREVIEW */}
-          <div className="bg-white rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[#FBCFE8]/30 aspect-square relative overflow-hidden flex items-center justify-center">
-            <FemaleAvatar2D 
-              skinTone={avatarState.skin_color} 
-              hairStyle={avatarState.hair} 
-              bodyType={avatarState.body_type} 
-            />
+          {/* COLUMN 1: SLIDERS & DYNAMIC MESH */}
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-[#FBCFE8]/50 shadow-sm rounded-[2rem] p-8 flex-grow flex flex-col items-center justify-center relative overflow-hidden">
+              <p className="absolute top-6 left-6 text-[10px] font-bold tracking-widest text-[#888888] uppercase">Dynamic Mesh Visualizer</p>
+              
+              {/* Dynamic SVG Silhouette */}
+              <div className="h-64 w-full flex items-center justify-center mt-6">
+                <motion.div
+                  animate={{ scaleX: dynamicScaleX, scaleY: dynamicScaleY }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  className="origin-bottom"
+                >
+                  <svg viewBox="0 0 100 250" className="w-32 h-64 opacity-80">
+                    <defs>
+                      <linearGradient id="meshGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ff3f6c" />
+                        <stop offset="100%" stopColor="#ff99b3" />
+                      </linearGradient>
+                    </defs>
+                    {/* Head */}
+                    <circle cx="50" cy="25" r="15" fill="url(#meshGrad)" />
+                    {/* Torso/Legs abstraction */}
+                    <path d="M 30 50 Q 50 45 70 50 L 75 110 Q 50 120 25 110 Z" fill="url(#meshGrad)" opacity="0.9"/>
+                    <path d="M 28 115 Q 50 125 72 115 L 65 240 L 52 240 L 50 160 L 48 240 L 35 240 Z" fill="url(#meshGrad)" opacity="0.7" />
+                    {/* Measurement lines */}
+                    <line x1="10" y1="25" x2="90" y2="25" stroke="#ff3f6c" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.5" />
+                    <line x1="10" y1="115" x2="90" y2="115" stroke="#ff3f6c" strokeWidth="0.5" strokeDasharray="2 2" opacity="0.5" />
+                  </svg>
+                </motion.div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-[#FBCFE8]/50 shadow-sm rounded-[2rem] p-8">
+              <div className="mb-8">
+                <div className="flex justify-between items-end mb-4">
+                  <label className="text-sm font-bold tracking-wider text-[#111111] uppercase flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-[#ff3f6c]" /> Height
+                  </label>
+                  <span className="text-2xl font-black text-[#111111]">{height} <span className="text-sm font-normal text-[#888888]">cm</span></span>
+                </div>
+                <input 
+                  type="range" min="140" max="210" value={height} 
+                  onChange={(e) => setHeight(Number(e.target.value))}
+                  className="w-full h-2 bg-[#FFF5F8] border border-[#FBCFE8] rounded-lg appearance-none cursor-pointer accent-[#ff3f6c]"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-end mb-4">
+                  <label className="text-sm font-bold tracking-wider text-[#111111] uppercase flex items-center gap-2">
+                    <Weight className="w-4 h-4 text-[#ff3f6c]" /> Weight
+                  </label>
+                  <span className="text-2xl font-black text-[#111111]">{weight} <span className="text-sm font-normal text-[#888888]">kg</span></span>
+                </div>
+                <input 
+                  type="range" min="40" max="130" value={weight} 
+                  onChange={(e) => setWeight(Number(e.target.value))}
+                  className="w-full h-2 bg-[#FFF5F8] border border-[#FBCFE8] rounded-lg appearance-none cursor-pointer accent-[#ff3f6c]"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* RIGHT: CUSTOMIZATION CONTROLS */}
-          <div className="flex flex-col gap-10 justify-center max-w-md">
-            
-            {/* BODY Toggles */}
-            <div>
-              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Body</h3>
-              <div className="flex flex-wrap items-center gap-3">
-                {bodyTypes.map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setAvatarState({ ...avatarState, body_type: type })}
-                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
-                      avatarState.body_type === type 
-                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
-                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
+          {/* COLUMN 2: PROPORTIONS & FIT */}
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-[#FBCFE8]/50 shadow-sm rounded-[2rem] p-8 h-full">
+              <div className="mb-12">
+                <label className="text-sm font-bold tracking-wider text-[#111111] uppercase mb-6 flex items-center gap-2 border-b border-[#FBCFE8]/50 pb-4">
+                  <UserCircle2 className="w-5 h-5 text-[#ff3f6c]" /> Body Geometry
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {shapes.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setShape(s)}
+                      className={`py-5 px-4 rounded-2xl text-sm font-bold transition-all border text-left ${
+                        shape === s 
+                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md shadow-[#ff3f6c]/20' 
+                        : 'bg-white text-[#666666] border-[#FBCFE8]/50 hover:border-[#ff3f6c]/50'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold tracking-wider text-[#111111] uppercase mb-6 flex items-center gap-2 border-b border-[#FBCFE8]/50 pb-4">
+                  <Scissors className="w-5 h-5 text-[#ff3f6c]" /> Drape Preference
+                </label>
+                <div className="flex flex-col gap-4">
+                  {fits.map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setFit(f)}
+                      className={`py-5 px-4 rounded-2xl text-sm font-bold transition-all border text-left flex justify-between items-center ${
+                        fit === f 
+                        ? 'bg-[#111111] text-white border-[#111111] shadow-md' 
+                        : 'bg-white text-[#666666] border-[#FBCFE8]/50 hover:border-[#111111]/30'
+                      }`}
+                    >
+                      {f}
+                      {fit === f && <CheckCircle2 className="w-4 h-4 text-white" />}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+          </div>
 
-            {/* HAIR Toggles */}
-            <div>
-              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Hair</h3>
-              <div className="flex flex-wrap items-center gap-3">
-                {hairStyles.map(style => (
-                  <button
-                    key={style}
-                    onClick={() => setAvatarState({ ...avatarState, hair: style })}
-                    className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all border ${
-                      avatarState.hair === style 
-                        ? 'bg-[#ff3f6c] text-white border-[#ff3f6c] shadow-md' 
-                        : 'bg-transparent text-[#111111] border-[#E5E5E5] hover:border-[#ff3f6c]/50'
-                    }`}
-                  >
-                    {style}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* SKIN TONE Toggles */}
-            <div>
-              <h3 className="text-xs font-bold tracking-[0.15em] text-[#888888] uppercase mb-4">Skin Tone</h3>
-              <div className="flex flex-wrap items-center gap-4">
-                {skinTones.map(hex => (
-                  <button
-                    key={hex}
-                    onClick={() => setAvatarState({ ...avatarState, skin_color: hex })}
-                    className={`w-12 h-12 rounded-full transition-all border-4 ${
-                      avatarState.skin_color === hex 
-                        ? 'border-[#ff3f6c] scale-110 shadow-md' 
-                        : 'border-transparent hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: hex }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* SAVE BUTTON */}
-            <button 
-              onClick={handleSave}
-              disabled={isLoading}
-              className="mt-6 w-full py-4 rounded-full font-bold text-white bg-[#ff3f6c] hover:bg-[#E11D48] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex justify-center items-center gap-2"
+          {/* COLUMN 3: TRUEFIT ALGORITHM RESULT */}
+          <div className="flex flex-col h-full">
+            <motion.div 
+              key={`${topSize}-${bottomSize}`}
+              initial={{ scale: 0.98, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white border border-[#FBCFE8]/50 rounded-[2.5rem] p-10 shadow-xl relative overflow-hidden h-full flex flex-col"
             >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>Save avatar <span className="text-lg leading-none font-light">→</span></>
-              )}
-            </button>
+              <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-b from-[#FFF5F8] to-transparent pointer-events-none" />
 
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-2 border-b border-[#FBCFE8]/50 pb-6 text-[#111111] relative z-10">
+                <CheckCircle2 className="w-5 h-5 text-[#4ade80]" /> Computation Output
+              </h3>
+
+              <div className="flex-grow flex flex-col justify-center">
+                <div className="flex items-center justify-between mb-10 relative z-10">
+                  <div>
+                    <p className="text-[#888888] text-xs uppercase tracking-widest font-bold mb-2">Calculated Top</p>
+                    <p className="text-7xl font-black text-[#111111]">{topSize}</p>
+                  </div>
+                  <div className="h-24 w-px bg-[#FBCFE8]" />
+                  <div className="text-right">
+                    <p className="text-[#888888] text-xs uppercase tracking-widest font-bold mb-2">Calculated Bottom</p>
+                    <p className="text-7xl font-black text-[#111111]">{bottomSize}</p>
+                  </div>
+                </div>
+
+                <div className="bg-[#FFF5F8] border border-[#FBCFE8] rounded-2xl p-5 mb-8 relative z-10">
+                  <p className="text-sm text-[#ff3f6c] leading-relaxed flex items-start gap-3 font-medium">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    Because you prefer a {fit.toLowerCase()} fit and have a {shape.toLowerCase()} geometry, our matrix shifted your base sizes to guarantee the perfect drape.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-auto relative z-10">
+                {errorMsg && <p className="text-sm text-[#E11D48] font-medium mb-4 text-center">{errorMsg}</p>}
+
+                <button
+                  onClick={handleSave}
+                  disabled={isLoading || isSaved}
+                  className={`w-full py-5 rounded-full font-bold text-lg transition-all flex justify-center items-center gap-2 ${
+                    isSaved ? 'bg-[#15803d] text-white shadow-lg shadow-[#15803d]/20' : 'bg-[#ff3f6c] hover:bg-[#E11D48] text-white shadow-lg shadow-[#ff3f6c]/20'
+                  }`}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : isSaved ? (
+                    <>Matrix Locked <CheckCircle2 className="w-5 h-5" /></>
+                  ) : (
+                    "Lock in my sizes"
+                  )}
+                </button>
+              </div>
+
+            </motion.div>
           </div>
+
         </div>
       </div>
     </main>

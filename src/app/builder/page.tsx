@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTribeStore } from '@/store/useTribeStore';
-import { ArrowLeft, Send, Search, Plus, X, ImagePlus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Search, Plus, X, ImagePlus, Loader2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface Product {
@@ -67,6 +67,9 @@ export default function BuilderPage() {
   const [tags, setTags] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   
+  // AI Feature State
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  
   const [avatarConfig, setAvatarConfig] = useState<any>(null);
 
   const getApiUrl = () => {
@@ -102,7 +105,6 @@ export default function BuilderPage() {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        // 👇 FIXED: Simplified Slug Logic
         const tribeSlug =
           currentTribe && currentTribe !== "default"
             ? currentTribe
@@ -113,8 +115,6 @@ export default function BuilderPage() {
         if (searchQuery) {
           endpoint += `&search=${encodeURIComponent(searchQuery)}`;
         }
-
-        console.log("🚀 DEBUG - Fetching products from:", endpoint);
 
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Backend responded with an error");
@@ -148,8 +148,57 @@ export default function BuilderPage() {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, currentTribe]); // 👇 FIXED: Added currentTribe to dependency array!
+  }, [searchQuery, currentTribe]);
 
+  // --- 👇 NEW AI GENERATOR FUNCTION ---
+  const handleAIGenerate = async () => {
+    if (canvasItems.length === 0) return;
+    
+    setIsGeneratingAI(true);
+    
+    try {
+      const token = localStorage.getItem('tribe_jwt');
+      const tribeName = currentTribe && currentTribe !== "default" ? currentTribe : "Neon Static";
+      
+      const payload = {
+        tribe: tribeName,
+        items: canvasItems.map(p => p.name)
+      };
+
+      console.log("🚀 Sending to AI Editor:", payload);
+
+      const response = await fetch(`${getApiUrl()}/ai/editorial`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+  const errText = await response.text();
+  console.error("🛑 Backend Rejected AI Request:", errText);
+  throw new Error(`AI Endpoint Failed: ${response.status}`);
+}
+
+      const data = await response.json();
+
+      if (data.success && data.editorial) {
+        setTitle(data.editorial.title);
+        setDescription(data.editorial.description);
+        setTags(data.editorial.hashtags.join(" "));
+      } else {
+        throw new Error("Invalid response format from AI");
+      }
+    } catch (error) {
+      console.error("AI Generation Error:", error);
+      // Native browser alert or toast depending on what you prefer
+      alert("Couldn't generate editorial. Please try again.");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
   
   const handlePublish = async () => {
     if (!title.trim()) return alert("Please give your lookbook a title!");
@@ -161,8 +210,6 @@ export default function BuilderPage() {
       const token = localStorage.getItem('tribe_jwt');
       const productsArray = canvasItems.map(item => item.id);
       const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-
-      console.log("🚀 DEBUG - Publishing Payload:", { title, description, tags: tagsArray, products: productsArray });
 
       const response = await fetch(`${getApiUrl()}/lookbooks`, {
         method: "POST",
@@ -177,11 +224,6 @@ export default function BuilderPage() {
           products: productsArray
         })
       });
-
-      if (!response.ok) {
-         const err = await response.text();
-         console.error("🛑 Publish rejected:", err);
-      }
 
       const data = await response.json();
 
@@ -322,14 +364,39 @@ export default function BuilderPage() {
           <div className="lg:col-span-5 flex flex-col p-6 md:p-8 rounded-[2rem] shadow-sm transition-colors duration-700 border min-h-[500px]" style={{ backgroundColor: surfaceColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}>
             
             <div className="flex flex-col gap-5 mb-8 shrink-0">
-              <input 
-                type="text" 
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title your lookbook..." 
-                className="w-full bg-transparent border-b pb-2 outline-none text-lg font-bold transition-colors placeholder:font-normal"
-                style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', color: textColor, fontFamily: customFont }}
-              />
+              {/* 👇 FIXED: AI Editor Button beside Title */}
+              <div className="flex items-center justify-between gap-4 w-full">
+                <input 
+                  type="text" 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Title your lookbook..." 
+                  className="flex-grow bg-transparent border-b pb-2 outline-none text-lg font-bold transition-colors placeholder:font-normal"
+                  style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', color: textColor, fontFamily: customFont }}
+                />
+                
+                <button 
+                  onClick={handleAIGenerate}
+                  disabled={isGeneratingAI || canvasItems.length === 0}
+                  className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ 
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', 
+                    color: textColor,
+                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+                  }}
+                >
+                  {isGeneratingAI ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" style={{ color: accentColor }} /> ⏳ Writing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3" style={{ color: accentColor }} /> AI Fashion Editor
+                    </>
+                  )}
+                </button>
+              </div>
+
               <input 
                 type="text" 
                 value={description}
@@ -342,7 +409,7 @@ export default function BuilderPage() {
                 type="text" 
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                placeholder="tags, comma, separated" 
+                placeholder="#tags #space #separated" 
                 className="w-full bg-transparent border-b pb-2 outline-none text-sm transition-colors placeholder:opacity-60"
                 style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', color: textColor }}
               />
@@ -373,7 +440,6 @@ export default function BuilderPage() {
                     </AnimatePresence>
                   </div>
 
-                  {/* 👇 YOUR DYNAMIC MINI AVATAR OVERLAY */}
                   {avatarConfig && (
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }} 

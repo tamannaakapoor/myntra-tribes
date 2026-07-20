@@ -96,7 +96,6 @@ export default function OnboardingPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   
-  // 👇 FIXED: Initialize dynamically and remove the hardcoded name
   const [username, setUsername] = useState('');
   
   const [showManual, setShowManual] = useState(false);
@@ -178,8 +177,6 @@ export default function OnboardingPage() {
       const token = localStorage.getItem('tribe_jwt');
       const answersArray = Object.values(finalAnswers);
 
-      console.log("🚀 DEBUG - Payload being sent:", JSON.stringify({ answers: answersArray }));
-
       const res = await fetch(`${getApiUrl()}/quiz/submit`, {
         method: "POST",
         headers: { 
@@ -191,15 +188,11 @@ export default function OnboardingPage() {
       
       if (res.ok) {
         const data = await res.json();
-        console.log("🚀 DEBUG - Quiz API Response:", data);
         const returnedTribe = data.assignedTribe?.slug || data.tribe?.slug || data.slug || data.tribe;
         if (typeof returnedTribe === 'string') {
           const formattedSlug = returnedTribe.toLowerCase().replace(/\s+/g, '-');
           if (TRIBES[formattedSlug as keyof typeof TRIBES]) finalSlug = formattedSlug as keyof typeof TRIBES;
         }
-      } else {
-        const errorText = await res.text();
-        console.error("🛑 Backend rejected the payload:", errorText);
       }
     } catch (error) {
       console.warn("Quiz API unreachable.");
@@ -217,26 +210,41 @@ export default function OnboardingPage() {
   };
 
   // -------------------------------------------------------------
-  // 🚀 SAVE TRIBE API INTEGRATION
+  // 🚀 FIXED: SAVE TRIBE TO BACKEND & UPDATE CACHE
   // -------------------------------------------------------------
   const acceptTribeAndContinue = async () => {
     if (!revealedTribe) return;
     
     try {
       const token = localStorage.getItem('tribe_jwt');
-      await fetch(`${getApiUrl()}/user/tribe`, {
+      const res = await fetch(`${getApiUrl()}/user/tribe`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ tribe_name: revealedTribe.name })
+        // Must send `tribe` exactly as the backend expects
+        body: JSON.stringify({ tribe: revealedTribe.name }) 
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Update local storage with the new user object that now contains the tribe!
+        if (data.user) {
+          localStorage.setItem('tribe_user', JSON.stringify(data.user));
+        }
+      }
     } catch (error) {
       console.warn("Failed to save tribe to backend, but routing to dashboard anyway.");
     }
 
+    // 1. Update Frontend State
     setTribe(revealedTribe.slug, revealedTribe.config);
+
+    // 2. Set Developer Fallback Flag for Auth Page
+    localStorage.setItem('onboarding_completed', 'true');
+
+    // 3. Route to Dashboard
     router.push('/dashboard');
   };
 
