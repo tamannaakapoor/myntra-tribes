@@ -26,8 +26,8 @@ const {
 
 const create = async (req, res) => {
   try {
-    const { title, description, tags, products } = req.body;
-
+    // const { title, description, tags, products } = req.body;
+    const { title, description, tags, products, tribe } = req.body;
     if (!title || !products || products.length === 0) {
       return res.status(400).json({
         success: false,
@@ -46,29 +46,55 @@ const create = async (req, res) => {
     }
 
     // Get user's active tribe
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("active_tribe_id")
-      .eq("id", req.user.id)
-      .single();
+    // const { data: profile, error: profileError } = await supabase
+    //   .from("profiles")
+    //   .select("active_tribe_id")
+    //   .eq("id", req.user.id)
+    //   .single();
 
-    if (profileError) throw profileError;
+    // if (profileError) throw profileError;
 
-    if (!profile.active_tribe_id) {
-      return res.status(400).json({
-        success: false,
-        message: "User has not joined a tribe yet.",
-      });
-    }
+    // if (!profile.active_tribe_id) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "User has not joined a tribe yet.",
+    //   });
+    // }
+    if (!tribe) {
+  return res.status(400).json({
+    success: false,
+    message: "Tribe is required",
+  });
+}
+
+const { data: tribeData, error: tribeError } = await supabase
+  .from("tribes")
+  .select("id")
+  .eq("slug", tribe)
+  .single();
+
+if (tribeError || !tribeData) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid tribe",
+  });
+}
 
     // Create lookbook
+    // const lookbook = await createLookbook({
+    //   avatarId: avatar.id,
+    //   tribeId: profile.active_tribe_id,
+    //   title,
+    //   description,
+    //   tags: tags || [],
+    // });
     const lookbook = await createLookbook({
-      avatarId: avatar.id,
-      tribeId: profile.active_tribe_id,
-      title,
-      description,
-      tags: tags || [],
-    });
+  avatarId: avatar.id,
+  tribeId: tribeData.id,
+  title,
+  description,
+  tags: tags || [],
+});
 
     // Save products
     await addLookbookItems(lookbook.id, products);
