@@ -221,7 +221,8 @@ export default function BuilderPage() {
           title: title,
           description: description,
           tags: tagsArray,
-          products: productsArray
+          products: productsArray,
+          tribe: currentTribe && currentTribe !== "default" ? currentTribe : "Golden Hour"
         })
       });
 
