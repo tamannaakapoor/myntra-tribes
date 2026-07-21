@@ -168,7 +168,14 @@ const result = assignTribe(normalizedAnswers);
         message: "Assigned tribe not found.",
       });
     }
+    const { error: updateError } = await supabase
+  .from("profiles")
+  .update({
+    active_tribe_id: tribeData.id,
+  })
+  .eq("id", req.user.id);
 
+if (updateError) throw updateError;
     return res.status(200).json({
 
     success: true,
