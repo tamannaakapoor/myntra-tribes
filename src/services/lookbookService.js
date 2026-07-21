@@ -26,8 +26,30 @@ const getAvatarByUserId = async (userId) => {
   return data;
 };
 // Create a new lookbook
+// const createLookbook = async ({
+//   avatarId,
+//   title,
+//   description,
+//   tags,
+// }) => {
+//   const { data, error } = await supabase
+//     .from("lookbooks")
+//     .insert({
+//       avatar_id: avatarId,
+//       title,
+//       description,
+//       tags,
+//     })
+//     .select()
+//     .single();
+
+//   if (error) throw error;
+
+//   return data;
+// };
 const createLookbook = async ({
   avatarId,
+  tribeId,
   title,
   description,
   tags,
@@ -36,6 +58,7 @@ const createLookbook = async ({
     .from("lookbooks")
     .insert({
       avatar_id: avatarId,
+      tribe_id: tribeId,
       title,
       description,
       tags,
@@ -258,9 +281,115 @@ const getLookbookById = async (lookbookId) => {
     products: items ? items.map((item) => item.product) : [],
   };
 };
-const getFeed = async (tribeName) => {
 
-  let query = supabase
+// const getFeed = async (tribeName) => {
+
+//   let query = supabase
+//     .from("lookbooks")
+//     .select(`
+//       id,
+//       title,
+//       description,
+//       tags,
+//       created_at,
+
+//       avatars(
+//         id,
+//         name,
+//         hair,
+//         skin_color,
+//         body_type,
+//         gender,
+//         user_id
+//       ),
+
+//       lookbook_items(
+//         products(
+//           image_url
+//         )
+//       )
+//     `)
+//     .order("created_at", { ascending: false });
+
+//   const { data, error } = await query;
+
+//   if (error) throw error;
+
+//   const feed = await Promise.all(
+//     data.map(async (lookbook) => {
+
+//       // Get profile
+//       const { data: profile } = await supabase
+//         .from("profiles")
+//         .select("username, active_tribe_id")
+//         .eq("id", lookbook.avatars.user_id)
+//         .maybeSingle();
+
+//       let tribe = null;
+
+//       if (profile?.active_tribe_id) {
+
+//         const { data: tribeData } = await supabase
+//           .from("tribes")
+//           .select("name")
+//           .eq("id", profile.active_tribe_id)
+//           .maybeSingle();
+
+//         tribe = tribeData?.name || null;
+//       }
+
+//       return {
+
+//         id: lookbook.id,
+
+//         title: lookbook.title,
+
+//         description: lookbook.description,
+
+//         tribe,
+
+//         images:
+//           lookbook.lookbook_items.map(
+//             (item) => item.products.image_url
+//           ),
+
+//         creator: {
+
+//           handle: profile?.username,
+
+//           avatar: {
+
+//             skin_color:
+//               lookbook.avatars.skin_color,
+
+//             hair:
+//               lookbook.avatars.hair,
+
+//             body_type:
+//               lookbook.avatars.body_type,
+
+//             gender:
+//               lookbook.avatars.gender,
+
+//           },
+
+//         },
+
+//       };
+
+//     })
+//   );
+
+//   if (tribeName) {
+//     return feed.filter(
+//       (item) => item.tribe === tribeName
+//     );
+//   }
+
+//   return feed;
+// };
+const getFeed = async (tribeName) => {
+  const { data, error } = await supabase
     .from("lookbooks")
     .select(`
       id,
@@ -269,9 +398,14 @@ const getFeed = async (tribeName) => {
       tags,
       created_at,
 
-      avatars(
+      tribes (
         id,
         name,
+        slug
+      ),
+
+      avatars (
+        id,
         hair,
         skin_color,
         body_type,
@@ -279,87 +413,58 @@ const getFeed = async (tribeName) => {
         user_id
       ),
 
-      lookbook_items(
-        products(
-          image_url
+      lookbook_items (
+        products (
+          id,
+          name,
+          brand,
+          price,
+          discount,
+          image_url,
+          product_url,
+          category
         )
       )
     `)
     .order("created_at", { ascending: false });
-
-  const { data, error } = await query;
 
   if (error) throw error;
 
   const feed = await Promise.all(
     data.map(async (lookbook) => {
 
-      // Get profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("username, active_tribe_id")
+        .select("username")
         .eq("id", lookbook.avatars.user_id)
         .maybeSingle();
 
-      let tribe = null;
-
-      if (profile?.active_tribe_id) {
-
-        const { data: tribeData } = await supabase
-          .from("tribes")
-          .select("name")
-          .eq("id", profile.active_tribe_id)
-          .maybeSingle();
-
-        tribe = tribeData?.name || null;
-      }
-
       return {
-
         id: lookbook.id,
-
         title: lookbook.title,
-
         description: lookbook.description,
 
-        tribe,
+        // <-- comes directly from lookbooks.tribe_id
+        tribe: lookbook.tribes?.name || null,
 
-        images:
-          lookbook.lookbook_items.map(
-            (item) => item.products.image_url
-          ),
+        products: lookbook.lookbook_items.map(item => item.products),
 
         creator: {
-
-          handle: profile?.username,
+          username: profile?.username || null,
 
           avatar: {
-
-            skin_color:
-              lookbook.avatars.skin_color,
-
-            hair:
-              lookbook.avatars.hair,
-
-            body_type:
-              lookbook.avatars.body_type,
-
-            gender:
-              lookbook.avatars.gender,
-
-          },
-
-        },
-
+            skin_color: lookbook.avatars.skin_color,
+            hair: lookbook.avatars.hair,
+            body_type: lookbook.avatars.body_type,
+            gender: lookbook.avatars.gender,
+          }
+        }
       };
-
     })
   );
 
   if (tribeName) {
-    return feed.filter(
-      (item) => item.tribe === tribeName
-    );
+    return feed.filter(item => item.tribe === tribeName);
   }
 
   return feed;
