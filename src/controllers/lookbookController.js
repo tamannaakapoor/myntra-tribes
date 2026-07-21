@@ -8,6 +8,7 @@
 
 
 // } = require("../services/lookbookService");
+const supabase = require("../config/supabase");
 const { addPoints } = require("../services/pointService");
 
 const {
@@ -21,11 +22,12 @@ const {
   unlikeLookbook,
 } = require("../services/lookbookService");
 // POST /api/lookbooks
+
+
 const create = async (req, res) => {
   try {
     const { title, description, tags, products } = req.body;
 
-    // Validate input
     if (!title || !products || products.length === 0) {
       return res.status(400).json({
         success: false,
@@ -33,32 +35,45 @@ const create = async (req, res) => {
       });
     }
 
-    // Find logged-in user's avatar
+    // Find user's avatar
     const avatar = await getAvatarByUserId(req.user.id);
 
-    // if (!avatar) {
-    //   return res.status(404).json({
-    //     success: false,
-    //     message: "Avatar not found",
-    //   });
-    // }
     if (!avatar) {
-  return res.status(404).json({
-    success: false,
-    message: "Please create an avatar first",
-  });
-}
+      return res.status(404).json({
+        success: false,
+        message: "Please create an avatar first",
+      });
+    }
+
+    // Get user's active tribe
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("active_tribe_id")
+      .eq("id", req.user.id)
+      .single();
+
+    if (profileError) throw profileError;
+
+    if (!profile.active_tribe_id) {
+      return res.status(400).json({
+        success: false,
+        message: "User has not joined a tribe yet.",
+      });
+    }
 
     // Create lookbook
     const lookbook = await createLookbook({
       avatarId: avatar.id,
+      tribeId: profile.active_tribe_id,
       title,
       description,
       tags: tags || [],
     });
 
-    // Save selected products
+    // Save products
     await addLookbookItems(lookbook.id, products);
+
+    // Award points
     await addPoints(req.user.id, 20);
 
     return res.status(201).json({
@@ -76,7 +91,6 @@ const create = async (req, res) => {
     });
   }
 };
-
 const getMine = async (req, res) => {
   try {
     const lookbooks = await getMyLookbooks(req.user.id);
