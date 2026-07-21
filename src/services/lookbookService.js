@@ -427,6 +427,7 @@ const getFeed = async (tribeName) => {
       )
     `)
     .order("created_at", { ascending: false });
+    console.log(JSON.stringify(data[0], null, 2));
 
   if (error) throw error;
 
