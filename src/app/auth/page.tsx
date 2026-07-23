@@ -18,32 +18,59 @@ export default function AuthPage() {
     setIsLoading(true);
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
-      const endpoint = isLogin ? "/auth/login" : "/auth/signup";
+      const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+      const CLEAN_API_URL = RAW_API_URL.replace(/\/$/, ""); 
+      
+      const endpoint = isLogin ? "/auth/login" : "/auth/register";
+      const finalUrl = `${CLEAN_API_URL}${endpoint}`;
+      
       const body = isLogin ? { email, password } : { username: name, email, password };
 
-      const response = await fetch(`${API_URL}${endpoint}`, {
+      const response = await fetch(finalUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Authentication failed");
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("The backend server returned a webpage instead of data.");
       }
 
-      localStorage.setItem("tribe_jwt", data.session.access_token);
-      localStorage.setItem("tribe_user", JSON.stringify(data.user));
+      const data = await response.json();
 
-      router.push("/onboarding");
+      if (!response.ok || data.error) {
+        throw new Error(data.message || data.error || "Authentication failed");
+      }
+
+      const token = data.token || (data.session && data.session.access_token);
+
+      if (token) {
+        // SUCCESSFUL LOGIN / REGISTRATION
+        const userData = data.user || (data.session && data.session.user) || { username: name, email };
+        
+        localStorage.setItem("tribe_jwt", token);
+        localStorage.setItem("tribe_user", JSON.stringify(userData));
+        
+        // 👇 BULLETPROOF ROUTING (No backend dependency)
+        if (isLogin) {
+          // Existing User -> Go straight to the Hub
+          router.push("/dashboard");
+        } else {
+          // Brand New User -> Force them to take the Quiz
+          router.push("/onboarding");
+        }
+
+      } else if (!isLogin && (data.success || response.ok || data.message)) {
+        alert("Registration successful! Please log in to enter your Tribe.");
+        setIsLogin(true); 
+      } else {
+        throw new Error(`No token found in response.`);
+      }
       
     } catch (error: any) {
-      console.warn("Backend unavailable. Bypassing to UI.", error.message);
-      localStorage.setItem("tribe_jwt", "mock_token_12345");
-      localStorage.setItem("tribe_user", JSON.stringify({ name: name || "Editorial User", email }));
-      router.push("/onboarding");
+      console.error("Auth Error:", error);
+      alert(`Login/Signup Failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -55,17 +82,14 @@ export default function AuthPage() {
       
       {/* LEFT SIDE: Full Bleed Editorial Visual */}
       <div className="hidden lg:flex w-1/2 relative h-full">
-        {/* Dreamy, pinkish-sky editorial image */}
         <div 
           className="absolute inset-0 bg-cover bg-center transition-transform duration-[20s] hover:scale-105"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop')" }}
         />
         
-        {/* Overlays: Warm pinkish tint + gradient for text readability */}
         <div className="absolute inset-0 bg-[#ff3f6c] mix-blend-overlay opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
         
-        {/* Branding - Clearly Visible */}
         <div className="absolute top-10 left-10 flex items-center gap-4 z-20">
           <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white font-serif font-bold text-2xl border border-white/30 shadow-lg">
             M
@@ -73,7 +97,6 @@ export default function AuthPage() {
           <span className="text-white tracking-[0.25em] font-semibold text-sm drop-shadow-md">MYNTRA TRIBES</span>
         </div>
 
-        {/* Hero Copy & Badges */}
         <div className="absolute bottom-12 left-10 pr-12 z-20">
           <h1 className="text-6xl xl:text-[80px] font-bold text-white mb-4 leading-[1.05] drop-shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
             Find Your<br/>Tribe.
@@ -82,7 +105,6 @@ export default function AuthPage() {
             Take the vibe quiz. Get reskinned. Build your look. Rise on the leaderboard.
           </p>
 
-          {/* Corrected 3 Tribes Badges */}
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 backdrop-blur-md border border-white/40 text-white text-sm font-medium shadow-sm hover:bg-white/30 transition-colors">
               <Sparkles className="w-4 h-4 text-[#F5E6CC]" /> Golden Hour

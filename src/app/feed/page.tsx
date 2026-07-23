@@ -1,110 +1,210 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Heart, Bookmark, ThumbsUp, Flame, Zap } from 'lucide-react';
+import { useTribeStore } from '@/store/useTribeStore';
+import { useCartStore } from '@/store/useCartStore';
+import { Heart, ThumbsUp, Bookmark, Loader2, Plus, Flame, Zap, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// Reusable Mini Avatar for Feed Cards
-function MiniAvatar2D({ skinTone, hairStyle }: { skinTone: string, hairStyle: string }) {
-  return (
-    <svg viewBox="0 0 200 300" className="w-12 h-20 drop-shadow-sm absolute bottom-4 right-4 z-10">
-      <defs>
-        <linearGradient id="miniDress" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#ff4d79" /><stop offset="100%" stopColor="#ff99b3" />
-        </linearGradient>
-      </defs>
-      {hairStyle === 'Long' && <rect x="55" y="70" width="90" height="110" rx="20" fill="#2C1B18" />}
-      {hairStyle === 'Bob' && <rect x="55" y="70" width="90" height="50" rx="20" fill="#2C1B18" />}
-      {hairStyle === 'Bun' && <circle cx="100" cy="30" r="22" fill="#2C1B18" />}
-      {hairStyle === 'Curly' && (
-        <path d="M50 80 Q40 100 55 120 Q45 140 60 160 Q80 170 100 170 Q120 170 140 160 Q155 140 145 120 Q160 100 150 80 Z" fill="#2C1B18" />
-      )}
-      <rect x="85" y="210" width="10" height="70" rx="5" fill={skinTone} />
-      <rect x="105" y="210" width="10" height="70" rx="5" fill={skinTone} />
-      <ellipse cx="90" cy="285" rx="12" ry="7" fill="#ff99b3" />
-      <ellipse cx="110" cy="285" rx="12" ry="7" fill="#ff99b3" />
-      <path d="M 65 125 L 135 125 L 130 220 L 70 220 Z" fill="url(#miniDress)" />
-      <circle cx="100" cy="80" r="38" fill={skinTone} />
-      <circle cx="85" cy="80" r="3.5" fill="#111111" />
-      <circle cx="115" cy="80" r="3.5" fill="#111111" />
-      <path d="M 62 75 Q 100 40 138 75 A 38 38 0 0 0 62 75 Z" fill="#2C1B18" />
-    </svg>
-  );
-}
+// --- VIBE / TRIBE HERO IMAGES ---
+const TRIBE_VIBE_IMAGE: Record<string, string> = {
+  'Neon Static': 'https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=735&auto=format&fit=crop',
+  'Vault Heir': 'https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=1074&auto=format&fit=crop',
+  'Golden Hour': 'https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=687&auto=format&fit=crop',
+};
+const DEFAULT_VIBE_IMAGE = TRIBE_VIBE_IMAGE['Golden Hour'];
 
-// 9 Highly Curated Lookbooks with Indian Creators & 3 Tribes
+const FALLBACK_PRODUCTS = [
+  'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=400&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1560343090-f0409e92791a?q=80&w=400&auto=format&fit=crop',
+];
+
 const FEED_MOCK = [
   {
-    id: 1, title: "Sun-Kissed Silks", handle: "@ananya_style", pieces: 4,
-    desc: "Draped in golden hour glow. Effortless sunset energy.",
-    tribe: "Golden Hour", likes: 84, loves: 241, saves: 45, skin: "#C29270", hair: "Long",
-    images: ["https://images.unsplash.com/photo-1594898995230-1fe3e3893965?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=400&auto=format&fit=crop"]
+    id: 'mock-1', title: "Summer Breeze", handle: "@ananya_style", pieces: 2,
+    desc: "Flutter sleeves and maxi lengths for the perfect summer day.",
+    tribe: "Golden Hour", likes: 84, loves: 241, saves: 45,
+    productImage: "https://assets.myntassets.com/dpr_2,q_60,w_210,c_limit,fl_progressive/assets/images/2026/MAY/15/c4UY2Jlc_db36b99333b942c29e8fe70205d2a308.jpg",
+    featuredProduct: { brand: "DressBerry", discount: "(61% OFF)" },
+    createdAt: '2026-05-10T10:00:00Z',
   },
   {
-    id: 2, title: "Midnight Cyber", handle: "@kavya_neon", pieces: 5,
+    id: 'mock-2', title: "Midnight Cyber", handle: "@kavya_neon", pieces: 5,
     desc: "Holographic textures and dark streets. Main character activated.",
-    tribe: "Neon Static", likes: 112, loves: 305, saves: 89, skin: "#8A5A44", hair: "Bob",
-    images: ["https://images.unsplash.com/photo-1512646605205-78422b7c7896?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop"]
+    tribe: "Neon Static", likes: 112, loves: 305, saves: 89,
+    productImage: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop",
+    featuredProduct: { brand: "Roadster", discount: "(40% OFF)" },
+    createdAt: '2026-05-08T10:00:00Z',
   },
   {
-    id: 3, title: "Vintage Archive", handle: "@priya_y2k", pieces: 3,
+    id: 'mock-3', title: "Vintage Archive", handle: "@priya_y2k", pieces: 3,
     desc: "Rifling through the 90s archive. Denim on denim.",
-    tribe: "Vault Heir", likes: 67, loves: 189, saves: 32, skin: "#F3D9C6", hair: "Long",
-    images: ["https://images.unsplash.com/photo-1626259189871-6b2e1daac55e?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=400&auto=format&fit=crop"]
-  },
-  {
-    id: 4, title: "Ethereal Morning", handle: "@sneha_vibes", pieces: 4,
-    desc: "Soft linen and warm light to start the day.",
-    tribe: "Golden Hour", likes: 95, loves: 210, saves: 56, skin: "#4A2E2B", hair: "Bun",
-    images: ["https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1518057111178-44a106bad636?q=80&w=600&auto=format&fit=crop"]
-  },
-  {
-    id: 5, title: "Electric Pulse", handle: "@ishita_fits", pieces: 6,
-    desc: "High contrast, high energy. Built for the underground.",
-    tribe: "Neon Static", likes: 156, loves: 420, saves: 112, skin: "#C29270", hair: "Long",
-    images: ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop"]
-  },
-  {
-    id: 6, title: "Heirloom Denim", handle: "@riya_retro", pieces: 3,
-    desc: "Bringing back the 2000s silhouettes. Low rise only.",
-    tribe: "Vault Heir", likes: 78, loves: 145, saves: 28, skin: "#8A5A44", hair: "Bob",
-    images: ["https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1532453288672-3a27e9be9efd?q=80&w=400&auto=format&fit=crop"]
-  },
-  {
-    id: 7, title: "Sunday Chai", handle: "@meera_glow", pieces: 3,
-    desc: "Cozy knits and reading by the window. Pure peace.",
-    tribe: "Golden Hour", likes: 110, loves: 340, saves: 88, skin: "#F5D0C5", hair: "Curly",
-    images: ["https://images.unsplash.com/photo-1527668752968-14dc70a27c95?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1560857617-84149b7abe53?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"]
-  },
-  {
-    id: 8, title: "Acid Rain", handle: "@tara_cyber", pieces: 5,
-    desc: "Streetwear that reflects the city lights. Unapologetic.",
-    tribe: "Neon Static", likes: 189, loves: 501, saves: 140, skin: "#C29270", hair: "Bob",
-    images: ["https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1563630381190-77c336ea545a?q=80&w=400&auto=format&fit=crop"]
-  },
-  {
-    id: 9, title: "Flip Phone Era", handle: "@naina_vault", pieces: 4,
-    desc: "Cargo pants and tiny sunglasses. We are so back.",
-    tribe: "Vault Heir", likes: 92, loves: 160, saves: 41, skin: "#F3D9C6", hair: "Long",
-    images: ["https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=400&auto=format&fit=crop", "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=400&auto=format&fit=crop"]
+    tribe: "Vault Heir", likes: 67, loves: 189, saves: 32,
+    productImage: "https://images.unsplash.com/photo-1632996547902-064471618ef0?q=80&w=400&auto=format&fit=crop",
+    featuredProduct: { brand: "Levis", discount: "(15% OFF)" },
+    createdAt: '2026-05-05T10:00:00Z',
   }
 ];
 
 const TRIBES = ["All Tribes", "✨ Golden Hour", "🔥 Neon Static", "🦋 Vault Heir"];
 
+const hashString = (value: string) =>
+  String(value).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+const getVibeImage = (tribeName: string) => TRIBE_VIBE_IMAGE[tribeName] || DEFAULT_VIBE_IMAGE;
+
 export default function FeedPage() {
   const router = useRouter();
-  const [activeTribe, setActiveTribe] = useState("All Tribes");
+  const globalTribe = useTribeStore((state: any) => state.tribe || state.slug || 'golden-hour');
+  const cartCount = useCartStore((state) => state.getTotalItems());
 
-  // 👇 FIXED: Foolproof filtering using .includes() instead of regex!
-  const filteredFeed = activeTribe === "All Tribes" 
-    ? FEED_MOCK 
-    : FEED_MOCK.filter(look => activeTribe.includes(look.tribe));
+  const [activeTribe, setActiveTribe] = useState("All Tribes");
+  const [sortMode, setSortMode] = useState<'trending' | 'new'>('trending');
+  const [combinedFeed, setCombinedFeed] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) url = `${url.replace(/\/$/, "")}/api`;
+    return url;
+  };
+
+  const resolveProduct = (lookbook: any, productsById: Record<string, any>) => {
+    if (Array.isArray(lookbook.products) && lookbook.products.length > 0) {
+      for (const entry of lookbook.products) {
+        if (typeof entry === 'object' && entry !== null && entry.image_url) return entry;
+        if (typeof entry === 'string' && productsById[entry]?.image_url) return productsById[entry];
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('tribe_jwt');
+      let liveUsername = 'creator';
+
+      try {
+        const userStr = localStorage.getItem('tribe_user');
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          liveUsername = userObj.username || userObj.name || 'creator';
+        }
+
+        if (token) {
+          const lookbooksRes = await fetch(`${getApiUrl()}/lookbooks`, { headers: { "Authorization": `Bearer ${token}` } });
+          if (lookbooksRes.ok) {
+            const lookbooksData = await lookbooksRes.json();
+            const liveBooks = lookbooksData.lookbooks || lookbooksData.data || lookbooksData;
+
+            if (Array.isArray(liveBooks)) {
+              const looseIds = new Set<string>();
+              liveBooks.forEach((lb: any) => {
+                (lb.products || []).forEach((p: any) => {
+                  if (typeof p === 'string') looseIds.add(p);
+                });
+              });
+
+              let productsById: Record<string, any> = {};
+              if (looseIds.size > 0) {
+                try {
+                  const idsParam = Array.from(looseIds).join(',');
+                  const productsRes = await fetch(`${getApiUrl()}/products?ids=${encodeURIComponent(idsParam)}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                  });
+                  if (productsRes.ok) {
+                    const productsData = await productsRes.json();
+                    const list = productsData.products || productsData.data || productsData;
+                    if (Array.isArray(list)) {
+                      productsById = Object.fromEntries(list.map((p: any) => [String(p.myntra_id || p.id), p]));
+                    }
+                  }
+                } catch {
+                  // Non-fatal
+                }
+              }
+
+              const formattedLivePosts = liveBooks.map((lb: any) => {
+                const resolvedProduct = resolveProduct(lb, productsById);
+                const idHash = hashString(lb.id || 'fallback');
+
+                // 👇 SMART TRIBE RESOLVER (Fixes the Golden Hour bug)
+                let mappedTribe = "Golden Hour";
+                
+                // 1. If backend has it explicitly saved
+                if (lb.tribe) {
+                  const t = String(lb.tribe).toLowerCase();
+                  if (t.includes('neon')) mappedTribe = "Neon Static";
+                  else if (t.includes('vault')) mappedTribe = "Vault Heir";
+                } 
+                // 2. Fallback: Parse the AI generated Title/Description to guess the tribe
+                else {
+                  const searchStr = `${lb.title || ''} ${lb.description || ''}`.toLowerCase();
+                  if (searchStr.includes('neon') || searchStr.includes('cyber') || searchStr.includes('static')) {
+                    mappedTribe = "Neon Static";
+                  } else if (searchStr.includes('vault') || searchStr.includes('heir') || searchStr.includes('y2k') || searchStr.includes('archive')) {
+                    mappedTribe = "Vault Heir";
+                  } else {
+                    // 3. Absolute fallback to whatever is in the local store right now
+                    if (globalTribe === 'neon-static') mappedTribe = "Neon Static";
+                    if (globalTribe === 'vault-heir') mappedTribe = "Vault Heir";
+                  }
+                }
+
+                return {
+                  id: lb.id || Math.random().toString(),
+                  title: lb.title || "Untitled Look",
+                  handle: `@${lb.creator?.username || lb.creator?.name || liveUsername}`,
+                  pieces: Array.isArray(lb.products) ? lb.products.length : 0,
+                  desc: lb.description || "",
+                  tribe: mappedTribe,
+                  likes: lb.likes_count ?? Math.floor(Math.random() * 50),
+                  loves: lb.loves_count ?? Math.floor(Math.random() * 50),
+                  saves: lb.saves_count ?? Math.floor(Math.random() * 20),
+                  productImage: resolvedProduct?.image_url || FALLBACK_PRODUCTS[idHash % FALLBACK_PRODUCTS.length],
+                  featuredProduct: resolvedProduct,
+                  createdAt: lb.created_at || lb.createdAt || new Date().toISOString(),
+                };
+              });
+
+              setCombinedFeed([...formattedLivePosts.reverse(), ...FEED_MOCK]);
+              setIsLoading(false);
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Could not fetch live feed. Loading mock data.");
+      }
+
+      setCombinedFeed(FEED_MOCK);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [globalTribe]);
+
+  // Filtering correctly handles the emoji tags because we match the core string
+  const filteredFeed = activeTribe === "All Tribes"
+    ? combinedFeed
+    : combinedFeed.filter(look => activeTribe.includes(look.tribe));
+
+  const sortedFeed = [...filteredFeed].sort((a, b) => {
+    if (sortMode === 'new') {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    const scoreA = (a.likes || 0) + (a.loves || 0) + (a.saves || 0);
+    const scoreB = (b.likes || 0) + (b.loves || 0) + (b.saves || 0);
+    return scoreB - scoreA;
+  });
 
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans pb-20">
-      
-      {/* Navbar */}
+
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-[#FBCFE8]/50 h-20 flex items-center px-6">
         <div className="max-w-[1400px] mx-auto w-full flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/dashboard')}>
@@ -121,28 +221,44 @@ export default function FeedPage() {
             <button onClick={() => router.push('/builder')} className="bg-[#ff3f6c] text-white px-5 py-2.5 rounded-full font-bold flex items-center gap-2 hover:bg-[#E11D48] shadow-md shadow-[#ff3f6c]/20">
               <Plus className="w-4 h-4" /> Create
             </button>
+            <button onClick={() => router.push('/checkout')} className="relative p-2 hover:bg-black/5 rounded-full transition-colors ml-4">
+              <ShoppingBag className="w-5 h-5 text-[#111111]" />
+              {cartCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </div>
+              )}
+            </button>
           </div>
         </div>
       </nav>
 
       <div className="max-w-[1400px] mx-auto px-6 pt-32">
-        
-        {/* Header Area */}
+
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
           <div>
             <p className="text-[10px] font-bold tracking-[0.25em] text-[#ff3f6c] uppercase mb-2">Creator Feed</p>
             <h1 className="text-5xl md:text-6xl font-bold tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>The Tribes runway</h1>
           </div>
           <div className="flex items-center gap-2 bg-white rounded-full p-1 border border-[#FBCFE8]/50 shadow-sm">
-            <button className="px-4 py-2 rounded-full bg-[#ff3f6c] text-white text-sm font-bold flex items-center gap-2"><Flame className="w-4 h-4"/> Trending</button>
-            <button className="px-4 py-2 rounded-full text-[#666666] hover:text-black text-sm font-bold flex items-center gap-2"><Zap className="w-4 h-4"/> New</button>
+            <button
+              onClick={() => setSortMode('trending')}
+              className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors ${sortMode === 'trending' ? 'bg-[#ff3f6c] text-white' : 'text-[#666666] hover:text-black'}`}
+            >
+              <Flame className="w-4 h-4" /> Trending
+            </button>
+            <button
+              onClick={() => setSortMode('new')}
+              className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-colors ${sortMode === 'new' ? 'bg-[#ff3f6c] text-white' : 'text-[#666666] hover:text-black'}`}
+            >
+              <Zap className="w-4 h-4" /> New
+            </button>
           </div>
         </div>
 
-        {/* Filter Pills */}
         <div className="flex items-center gap-3 overflow-x-auto no-scrollbar mb-10 pb-2">
           {TRIBES.map(t => (
-            <button 
+            <button
               key={t} onClick={() => setActiveTribe(t)}
               className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border shadow-sm ${
                 activeTribe === t ? 'bg-[#ff3f6c] text-white border-[#ff3f6c]' : 'bg-white text-[#111111] border-[#FBCFE8]/50 hover:border-[#ff3f6c]/50'
@@ -153,33 +269,72 @@ export default function FeedPage() {
           ))}
         </div>
 
-        {/* Lookbooks Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredFeed.map((look) => (
-            <div key={look.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-[#FBCFE8]/30 group cursor-pointer">
-              {/* Image Collage with mini avatar overlay */}
-              <div className="h-[320px] w-full bg-gradient-to-tr from-[#ff99b3] to-[#FBCFE8] p-2 flex gap-2 relative">
-                <div className="w-1/2 h-full rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url('${look.images[0]}')` }} />
-                <div className="w-1/2 h-full rounded-2xl bg-cover bg-center" style={{ backgroundImage: `url('${look.images[1]}')` }} />
-                <MiniAvatar2D skinTone={look.skin} hairStyle={look.hair} />
-              </div>
-              {/* Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-1" style={{ fontFamily: 'Georgia, serif' }}>{look.title}</h3>
-                <p className="text-xs text-[#888888] mb-3">{look.handle} • {look.pieces} pieces</p>
-                <p className="text-[#666666] text-sm mb-5 leading-relaxed">{look.desc}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-[#888888] text-sm font-medium">
-                    <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><ThumbsUp className="w-4 h-4" /> {look.likes}</span>
-                    <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><Heart className="w-4 h-4" /> {look.loves}</span>
-                    <span className="flex items-center gap-1 hover:text-[#ff3f6c]"><Bookmark className="w-4 h-4" /> {look.saves}</span>
+        {isLoading ? (
+           <div className="flex flex-col items-center justify-center py-20 gap-4">
+             <Loader2 className="w-8 h-8 animate-spin text-[#ff3f6c]" />
+             <p className="text-sm font-medium opacity-60">Loading the latest drops...</p>
+           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <AnimatePresence>
+              {sortedFeed.map((look) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  key={look.id}
+                  onClick={() => router.push(`/lookbook/${look.id}`)}
+                  className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-[#FBCFE8]/30 group cursor-pointer hover:-translate-y-1"
+                >
+
+                  <div className="h-[320px] w-full p-2 flex gap-2 relative bg-white">
+
+                    {/* Left: tribe vibe image */}
+                    <div
+                      className="w-1/2 h-full rounded-2xl bg-cover bg-center relative overflow-hidden group-hover:brightness-95 transition-all"
+                      style={{ backgroundImage: `url('${getVibeImage(look.tribe)}')` }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute bottom-3 left-3 bg-white/20 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-bold text-white tracking-widest uppercase border border-white/20 shadow-sm">
+                        {look.tribe}
+                      </div>
+                    </div>
+
+                    {/* Right: real product image */}
+                    <div
+                      className="w-1/2 h-full rounded-2xl bg-cover bg-center relative overflow-hidden bg-black/5"
+                      style={{ backgroundImage: `url('${look.productImage}')` }}
+                    >
+                      {look.featuredProduct?.brand && (
+                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[9px] font-bold text-[#111111] uppercase tracking-wider shadow-sm">
+                          {look.featuredProduct.brand}
+                        </div>
+                      )}
+                      {look.featuredProduct?.discount && String(look.featuredProduct.discount).includes('%') && (
+                        <div className="absolute bottom-3 right-3 bg-[#ff3f6c] px-2 py-1 rounded-md text-[10px] font-bold text-white shadow-sm">
+                          {look.featuredProduct.discount}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[10px] font-bold bg-[#FFF5F8] text-[#ff3f6c] px-2 py-1 rounded-md">{look.tribe}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+
+                  <div className="p-6 relative bg-white">
+                    <h3 className="text-xl font-bold mb-1" style={{ fontFamily: 'Georgia, serif' }}>{look.title}</h3>
+                    <p className="text-xs text-[#888888] mb-3">{look.handle} • {look.pieces} pieces</p>
+                    <p className="text-[#666666] text-sm mb-5 leading-relaxed line-clamp-2">{look.desc}</p>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="flex items-center gap-4 text-[#888888] text-sm font-medium">
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><ThumbsUp className="w-4 h-4" /> {look.likes}</span>
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><Heart className="w-4 h-4" /> {look.loves}</span>
+                        <span className="flex items-center gap-1 group-hover:text-[#ff3f6c] transition-colors"><Bookmark className="w-4 h-4" /> {look.saves}</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
       </div>
     </main>
