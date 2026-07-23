@@ -197,7 +197,7 @@ export default function OnboardingPage() {
 const token = localStorage.getItem("tribe_jwt");
 console.log(token);
 
-await fetch(`${getApiUrl()}/tribes/assign`,  {
+const res = await fetch(`${getApiUrl()}/tribes/assign`,  {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
