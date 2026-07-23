@@ -74,7 +74,40 @@ const createOrder = async (req, res) => {
 
   }
 };
+const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
 
+    const { data, error } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        items,
+        total,
+        points_earned,
+        created_at
+      `)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      orders: data,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
 module.exports = {
   createOrder,
+    getUserOrders,
+
 };

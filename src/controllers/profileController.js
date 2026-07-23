@@ -9,7 +9,6 @@ const getUserProfile = async (req, res) => {
       .from("profiles")
       .select(`
         username,
-        email,
         points,
         shipping_address
       `)
