@@ -499,6 +499,42 @@ const unlikeLookbook = async (userId, lookbookId) => {
 
   return true;
 };
+
+const addComment = async (lookbookId, userId, text) => {
+
+  const { data, error } = await supabase
+    .from("comments")
+    .insert({
+      lookbook_id: lookbookId,
+      user_id: userId,
+      text,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+};
+const getComments = async (lookbookId) => {
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select(`
+      id,
+      text,
+      created_at,
+      profiles(
+        username
+      )
+    `)
+    .eq("lookbook_id", lookbookId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+
+  return data;
+};
 module.exports = {
   getAvatarByUserId,
   createLookbook,
@@ -509,6 +545,7 @@ module.exports = {
        likeLookbook,
 
        unlikeLookbook,
-
+       addComment,
+       getComments,
 
 };

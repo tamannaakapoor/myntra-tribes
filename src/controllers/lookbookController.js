@@ -20,6 +20,8 @@ const {
   getFeed: getFeedService,
   likeLookbook,
   unlikeLookbook,
+  addComment,
+  getComments,
 } = require("../services/lookbookService");
 // POST /api/lookbooks
 
@@ -265,6 +267,112 @@ const unlike = async (req,res)=>{
     }
 
 };
+const toggleLike = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const lookbookId = req.params.id;
+
+    const { data: existingLike, error } = await supabase
+      .from("lookbook_likes")
+      .select("user_id")
+      .eq("user_id", userId)
+      .eq("lookbook_id", lookbookId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (existingLike) {
+      await unlikeLookbook(userId, lookbookId);
+
+      return res.status(200).json({
+        success: true,
+        liked: false,
+        message: "Lookbook unliked",
+      });
+    }
+
+    await likeLookbook(userId, lookbookId);
+
+    return res.status(200).json({
+      success: true,
+      liked: true,
+      message: "Lookbook liked",
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+const postComment = async (req, res) => {
+
+    try {
+
+        const lookbookId = req.params.id;
+        const userId = req.user.id;
+        const { text } = req.body;
+
+        if (!text || !text.trim()) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Comment cannot be empty",
+            });
+
+        }
+
+        const comment = await addComment(
+            lookbookId,
+            userId,
+            text
+        );
+
+        return res.status(201).json({
+            success: true,
+            comment,
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+
+    }
+
+};
+const getLookbookComments = async (req, res) => {
+
+    try {
+
+        const comments = await getComments(req.params.id);
+
+        return res.json({
+            success: true,
+            count: comments.length,
+            comments,
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+        });
+
+    }
+
+};
 module.exports = {
   create,
   getMine,
@@ -272,4 +380,7 @@ module.exports = {
   getFeed,
   like,
   unlike,
+  toggleLike,
+  postComment,
+  getLookbookComments,
 };
