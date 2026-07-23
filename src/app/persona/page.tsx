@@ -126,18 +126,67 @@ export default function PersonaPage() {
     router.push('/auth');
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  // const handleSendMessage = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (!chatInput.trim()) return;
     
-    setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
-    setChatInput('');
+  //   setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
+  //   setChatInput('');
     
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { sender: 'bot', text: 'Got it! Retrieving your latest order details from the database now. Give me just a second...' }]);
-    }, 1000);
-  };
+  //   setTimeout(() => {
+  //     setChatMessages(prev => [...prev, { sender: 'bot', text: 'Got it! Retrieving your latest order details from the database now. Give me just a second...' }]);
+  //   }, 1000);
+  // };
+const handleSendMessage = async (e: React.FormEvent) => {
+  e.preventDefault();
 
+  if (!chatInput.trim()) return;
+
+  const message = chatInput;
+
+  setChatMessages((prev) => [
+    ...prev,
+    { sender: "user", text: message },
+  ]);
+
+  setChatInput("");
+
+  try {
+    const token = localStorage.getItem("tribe_jwt");
+
+    const res = await fetch(`${getApiUrl()}/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        message,
+      }),
+    });
+
+    const data = await res.json();
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        sender: "bot",
+        text: data.reply || "Sorry, I couldn't generate a response.",
+      },
+    ]);
+
+  } catch (err) {
+    console.error(err);
+
+    setChatMessages((prev) => [
+      ...prev,
+      {
+        sender: "bot",
+        text: "Something went wrong while contacting the assistant.",
+      },
+    ]);
+  }
+};
   if (!isMounted) return null;
 
   return (
