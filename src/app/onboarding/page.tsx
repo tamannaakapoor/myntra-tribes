@@ -174,25 +174,50 @@ export default function OnboardingPage() {
     finalSlug = (Object.keys(counts).reduce((a, b) => counts[a as keyof typeof counts] > counts[b as keyof typeof counts] ? a : b) as keyof typeof TRIBES);
 
     try {
-      const token = localStorage.getItem('tribe_jwt');
-      const answersArray = Object.values(finalAnswers);
+      // const res = await fetch(`${API_URL}/tribes/assign`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ answers: finalAnswers })
+      // });
+      // const token = localStorage.getItem("token");
+//       const token = localStorage.getItem("tribe_jwt");
 
-      const res = await fetch(`${getApiUrl()}/quiz/submit`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json", 
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify({ answers: answersArray })
-      });
-      
+// const res = await fetch(`${API_URL}/tribes/assign`, {
+//     method: "POST",
+
+//     headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//     },
+
+//     body: JSON.stringify({
+//         answers: finalAnswers,
+//     }),
+// });
+const token = localStorage.getItem("tribe_jwt");
+console.log(token);
+
+await fetch(`${getApiUrl()}/tribes/assign`,  {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    answers: finalAnswers,
+  }),
+});
       if (res.ok) {
         const data = await res.json();
-        const returnedTribe = data.assignedTribe?.slug || data.tribe?.slug || data.slug || data.tribe;
-        if (typeof returnedTribe === 'string') {
-          const formattedSlug = returnedTribe.toLowerCase().replace(/\s+/g, '-');
-          if (TRIBES[formattedSlug as keyof typeof TRIBES]) finalSlug = formattedSlug as keyof typeof TRIBES;
-        }
+        // finalSlug = data?.assignedTribe?.slug || data?.tribe?.slug || data?.slug || 'golden-hour';
+    //     finalSlug =
+    // data?.onboarding?.tribe?.slug ||
+    // "golden-hour";
+    console.log(data);
+
+finalSlug =
+    data?.onboarding?.tribe?.slug ||
+    "golden-hour";
       }
     } catch (error) {
       console.warn("Quiz API unreachable.");
@@ -209,46 +234,53 @@ export default function OnboardingPage() {
     setRevealedTribe(selected); 
   };
 
-  // -------------------------------------------------------------
-  // 🚀 FIXED: SAVE TRIBE TO BACKEND & UPDATE CACHE
-  // -------------------------------------------------------------
-  const acceptTribeAndContinue = async () => {
-    if (!revealedTribe) return;
-    
-    try {
-      const token = localStorage.getItem('tribe_jwt');
-      const res = await fetch(`${getApiUrl()}/user/tribe`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        // Must send `tribe` exactly as the backend expects
-        body: JSON.stringify({ tribe: revealedTribe.name }) 
-      });
+  // const acceptTribeAndContinue = () => {
+  //   if (!revealedTribe) return;
+  //   setTribe(revealedTribe.slug, revealedTribe.config);
+  //   router.push('/dashboard');
+  // };
+const acceptTribeAndContinue = async () => {
+  if (!revealedTribe) return;
 
-      if (res.ok) {
-        const data = await res.json();
-        // Update local storage with the new user object that now contains the tribe!
-        if (data.user) {
-          localStorage.setItem('tribe_user', JSON.stringify(data.user));
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to save tribe to backend, but routing to dashboard anyway.");
-    }
+  try {
+    const token = localStorage.getItem("tribe_jwt");
 
-    // 1. Update Frontend State
-    setTribe(revealedTribe.slug, revealedTribe.config);
+    // await fetch(`${API_URL}/tribes/select`, {
+    // await fetch(`${getApiUrl()}/tribes/select`, {
+    //   method: "POST",
 
-    // 2. Set Developer Fallback Flag for Auth Page
-    localStorage.setItem('onboarding_completed', 'true');
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     Authorization: `Bearer ${token}`,
+    //   },
 
-    // 3. Route to Dashboard
-    router.push('/dashboard');
-  };
+    //   body: JSON.stringify({
+    //     slug: revealedTribe.slug,
+    //   }),
+    // });
+    const res = await fetch(`${getApiUrl()}/tribes/select`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    slug: revealedTribe.slug,
+  }),
+});
 
-  // --- REVEAL SCREEN ---
+const data = await res.json();
+
+console.log(data);
+
+  } catch (err) {
+    console.error(err);
+  }
+
+  setTribe(revealedTribe.slug, revealedTribe.config);
+  router.push("/dashboard");
+};
+  // --- REVEAL SCREEN (MATCHING YOUR SCREENSHOT EXACTLY) ---
   if (revealedTribe) {
     return (
       <main className="h-screen w-full flex flex-col items-center justify-center relative overflow-hidden font-sans">
