@@ -1,5 +1,6 @@
 'use client';
 import { useCartStore } from '@/store/useCartStore';
+import { useTribeStore } from '@/store/useTribeStore';
 import { ShoppingBag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -35,7 +36,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [avatarConfig, setAvatarConfig] = useState({ skin_color: '#E0B594', hair: 'Long' });
-  const [points, setPoints] = useState(500);
+  
+  // ---> NEW: Use Global Zustand Store for Points and Cart
+  const points = useTribeStore((state) => state.points);
   const cartCount = useCartStore((state) => state.getTotalItems());
 
   const getApiUrl = () => {
@@ -55,15 +58,7 @@ export default function DashboardPage() {
       } catch (e) {}
     }
 
-    // 2. Load Persistent Points
-    const savedPoints = localStorage.getItem('tribe_points');
-    if (savedPoints) {
-      setPoints(Number(savedPoints));
-    } else {
-      localStorage.setItem('tribe_points', '500'); 
-    }
-
-    // 3. Load Avatar
+    // 2. Load Avatar
     const token = localStorage.getItem('tribe_jwt');
     const fetchAvatar = async () => {
       if (!token) return;
@@ -112,13 +107,13 @@ export default function DashboardPage() {
                <NavAvatar skinTone={avatarConfig.skin_color} hairStyle={avatarConfig.hair} />
             </button>
             <button onClick={() => router.push('/checkout')} className="relative p-2 hover:bg-black/5 rounded-full transition-colors ml-4">
-  <ShoppingBag className="w-5 h-5 text-[#111111]" />
-  {cartCount > 0 && (
-    <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
-      {cartCount}
-    </div>
-  )}
-</button>
+              <ShoppingBag className="w-5 h-5 text-[#111111]" />
+              {cartCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </div>
+              )}
+            </button>
 
             <button onClick={() => { localStorage.clear(); router.push('/auth'); }} className="text-[#888888] hover:text-black transition-colors">
               <LogOut className="w-5 h-5" />
