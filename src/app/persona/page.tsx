@@ -22,6 +22,17 @@ const TRIBE_META: Record<string, { label: string; accent: string; vibe: string }
 export default function PersonaPage() {
   const router = useRouter();
 
+  const getApiUrl = () => {
+  let url =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://myntra-tribes.onrender.com/api";
+
+  if (!url.endsWith("/api")) {
+    url = `${url.replace(/\/$/, "")}/api`;
+  }
+
+  return url;
+};
   // --- DYNAMIC DB STATE ---
   const [isMounted, setIsMounted] = useState(false);
  const [userData, setUserData] = useState<{
