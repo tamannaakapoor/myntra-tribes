@@ -55,7 +55,11 @@ const aiRoutes = require("./routes/aiRoutes");
 const voteRoutes = require("./routes/voteRoutes");
 const gelaphaRoutes = require("./routes/gelaphaRoutes");
 const truefitRoutes = require("./routes/truefitRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 
+app.use("/api/user", profileRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/truefit", truefitRoutes);
 
 app.use("/api/votes", voteRoutes);
