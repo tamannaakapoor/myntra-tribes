@@ -5,22 +5,41 @@ const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select(`
-        username,
-        points,
-        shipping_address
-      `)
-      .eq("id", userId)
-      .single();
+    // const { data, error } = await supabase
+    //   .from("profiles")
+    //   .select(`
+    //     username,
+    //     points,
+    //     shipping_address
+    //   `)
+    //   .eq("id", userId)
+    //   .single();
 
-    if (error) throw error;
+    // if (error) throw error;
 
-    return res.status(200).json({
-      success: true,
-      user: data,
-    });
+    // return res.status(200).json({
+    //   success: true,
+    //   user: data,
+    // });
+    const { data: profile, error } = await supabase
+  .from("profiles")
+  .select(`
+    username,
+    points,
+    shipping_address
+  `)
+  .eq("id", userId)
+  .single();
+
+if (error) throw error;
+
+return res.status(200).json({
+  success: true,
+  user: {
+    ...profile,
+    email: req.user.email,
+  },
+});
 
   } catch (err) {
     console.error(err);
