@@ -12,23 +12,24 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const themeConfig = useTribeStore((state) => state.themeConfig);
-  const currentTribe = useTribeStore((state: any) => state.currentTribe || 'default');
   
-  // --- STATE ---
-  const [isMounted, setIsMounted] = useState(false);
+  // --- ZUSTAND GLOBAL STATE ---
   const { cart, removeFromCart, clearCart, getTotalPrice } = useCartStore();
+  const themeConfig = useTribeStore((state) => state.themeConfig);
+  const userPoints = useTribeStore((state) => state.points);
+  const addPoints = useTribeStore((state) => state.addPoints);
+  const deductPoints = useTribeStore((state) => state.deductPoints);
+  
+  // --- LOCAL STATE ---
+  const [isMounted, setIsMounted] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   
-  // Points & Coupons
-  const [userPoints, setUserPoints] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
   const [earnedPoints, setEarnedPoints] = useState(0);
 
-  // Address State
   const [isEditingAddress, setIsEditingAddress] = useState(false);
   const [address, setAddress] = useState({
     name: 'Trendsetter',
@@ -38,39 +39,29 @@ export default function CheckoutPage() {
     zip: '560100'
   });
 
-  // Payment State
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card' | 'cod'>('upi');
   const [upiId, setUpiId] = useState('');
 
-  // --- LIFECYCLE ---
   useEffect(() => {
     setIsMounted(true);
-    
-    // Load Points
-    const savedPoints = localStorage.getItem('tribe_points');
-    if (savedPoints) setUserPoints(Number(savedPoints));
-
-    // Load Saved Address
     const savedAddress = localStorage.getItem('tribe_address');
     if (savedAddress) {
-      try {
-        setAddress(JSON.parse(savedAddress));
-      } catch (e) {
-        console.warn("Failed to parse saved address");
-      }
+      try { setAddress(JSON.parse(savedAddress)); } catch (e) {}
     }
   }, []);
 
   if (!isMounted) return null;
 
-  // --- CALCULATIONS ---
+  // --- STRICT CALCULATIONS ---
   const subtotal = getTotalPrice();
-  const maxPointsAllowed = Math.floor(subtotal * 0.5); // Max 50% of order value
-  const pointsToUse = usePoints ? Math.min(userPoints, maxPointsAllowed) : 0;
+  const maxPointsAllowed = Math.floor(subtotal * 0.5); 
+  
+  // Only allow points if balance is greater than 0
+  const pointsToUse = (usePoints && userPoints > 0) ? Math.min(userPoints, maxPointsAllowed) : 0;
   const couponDiscount = appliedCoupon ? Math.floor(subtotal * appliedCoupon.discount) : 0;
   
   const finalTotal = Math.max(0, subtotal - pointsToUse - couponDiscount);
-  const calculatedPointsEarned = Math.floor(finalTotal * 0.075); // 7.5% cashback
+  const calculatedPointsEarned = Math.floor(finalTotal * 0.075); 
 
   // --- HANDLERS ---
   const handleApplyCoupon = () => {
@@ -99,8 +90,11 @@ export default function CheckoutPage() {
     setIsCheckingOut(true);
     setEarnedPoints(calculatedPointsEarned);
     
+    // Process points safely via global store
+    if (pointsToUse > 0) deductPoints(pointsToUse);
+    addPoints(calculatedPointsEarned);
+    
     const token = localStorage.getItem('tribe_jwt');
-    const newTotalPoints = userPoints - pointsToUse + calculatedPointsEarned;
     
     const orderData = {
       items: cart,
@@ -126,8 +120,6 @@ export default function CheckoutPage() {
     } catch (error) {
       console.warn("Backend order creation failed, proceeding locally.");
     }
-
-    localStorage.setItem('tribe_points', newTotalPoints.toString());
     
     setTimeout(() => {
       setIsCheckingOut(false);
@@ -296,8 +288,8 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={usePoints} onChange={() => setUsePoints(!usePoints)} disabled={userPoints === 0} />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff3f6c]"></div>
+                      <input type="checkbox" className="sr-only peer" checked={usePoints} onChange={() => setUsePoints(!usePoints)} disabled={userPoints <= 0} />
+                      <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${userPoints <= 0 ? 'opacity-50 cursor-not-allowed' : 'peer-checked:bg-[#ff3f6c]'}`}></div>
                     </label>
                   </div>
                 </div>
