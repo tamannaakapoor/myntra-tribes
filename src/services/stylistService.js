@@ -66,6 +66,10 @@ const prompt = createStylistPrompt({
   weather,
   products: filteredProducts,
 });
+// 👇 Debug 1
+console.log("========== PROMPT ==========");
+console.log("Prompt length:", prompt.length);
+console.log("============================");
 
 // Call Groq
 const completion = await groq.chat.completions.create({
@@ -78,7 +82,11 @@ const completion = await groq.chat.completions.create({
   ],
   temperature: 0.4,
 });
-
+// 👇 Debug 2
+console.log("========== GROQ RESPONSE ==========");
+console.log("Completion received:", !!completion);
+console.log(completion.choices?.[0]?.message?.content);
+console.log("==================================");
 // Parse AI Response
 let aiResponse;
 
