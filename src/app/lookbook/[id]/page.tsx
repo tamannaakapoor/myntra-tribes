@@ -3,7 +3,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Heart, MessageCircle, Share2, ShoppingBag, Plus, UserPlus, Check } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DEFAULT_LIKES = 124;
 const PRODUCT_IMAGE_FALLBACK = 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=400&auto=format&fit=crop';
@@ -29,6 +29,9 @@ export default function LookbookDetailsPage() {
 
   const [comments, setComments] = useState<any[]>(DEFAULT_COMMENTS);
   const [newComment, setNewComment] = useState("");
+  
+  // New state for the Share fallback toast
+  const [shareToast, setShareToast] = useState(false);
 
   const getApiUrl = () => {
     let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
@@ -113,6 +116,28 @@ export default function LookbookDetailsPage() {
     // TODO(backend): POST /api/creators/:id/follow (toggle)
   };
 
+  // --- NEW: Share Handler ---
+  const handleShare = async () => {
+    const shareData = {
+      title: `${lookbook?.title || 'Lookbook'} on Myntra Tribes`,
+      text: 'Check out this aesthetic fit I found on Myntra Tribes!',
+      url: window.location.href
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.warn("Share aborted or failed", err);
+      }
+    } else {
+      // Fallback: Copy to clipboard if Native Share is unsupported
+      navigator.clipboard.writeText(window.location.href);
+      setShareToast(true);
+      setTimeout(() => setShareToast(false), 2500);
+    }
+  };
+
   const handlePostComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -149,6 +174,18 @@ export default function LookbookDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans pb-32">
+
+      {/* Share Toast Notification */}
+      <AnimatePresence>
+        {shareToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 bg-[#111111] text-white px-6 py-3 rounded-full shadow-xl z-[100] flex items-center gap-2 font-bold text-sm"
+          >
+            <Check className="w-4 h-4 text-green-400" /> Link copied to clipboard!
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Navbar with Cart */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-[#FBCFE8]/50 h-20 flex items-center px-6">
@@ -250,7 +287,7 @@ export default function LookbookDetailsPage() {
               <button className="flex items-center gap-2 text-lg font-bold text-[#888888] hover:text-[#111111] transition-colors">
                 <MessageCircle className="w-7 h-7" /> {comments.length}
               </button>
-              <button className="flex items-center gap-2 text-lg font-bold text-[#888888] hover:text-[#111111] transition-colors ml-auto">
+              <button onClick={handleShare} className="flex items-center gap-2 text-lg font-bold text-[#888888] hover:text-[#111111] transition-colors ml-auto">
                 <Share2 className="w-6 h-6" />
               </button>
             </div>

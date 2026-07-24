@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware'; // <-- 1. Import persist
+import { persist } from 'zustand/middleware';
 
 export type TribeType = 'default' | 'golden-hour' | 'neon-static' | 'vault-heir';
 
@@ -22,10 +22,16 @@ interface TribeState {
   themeConfig: ThemeConfig;
   avatarId: string | null;
   userGender: string | null;
+  points: number; // Global Points State
 
   setTribe: (tribe: TribeType, config?: ThemeConfig) => void;
   setAvatarId: (id: string) => void;
   setUserGender: (gender: string) => void;
+  
+  // Point Handlers (Strictly enforces 0 minimum)
+  setPoints: (points: number) => void;
+  addPoints: (amount: number) => void;
+  deductPoints: (amount: number) => void;
 }
 
 const defaultTheme: ThemeConfig = {
@@ -42,7 +48,6 @@ const defaultTheme: ThemeConfig = {
   bannerAnimation: "none"
 };
 
-// 2. Wrap the store in the persist middleware!
 export const useTribeStore = create<TribeState>()(
   persist(
     (set) => ({
@@ -50,6 +55,7 @@ export const useTribeStore = create<TribeState>()(
       themeConfig: defaultTheme,
       avatarId: null,
       userGender: null,
+      points: 500, // New users start with 500
 
       setTribe: (tribe, config) => set((state) => ({ 
         currentTribe: tribe, 
@@ -57,9 +63,14 @@ export const useTribeStore = create<TribeState>()(
       })),
       setAvatarId: (id) => set({ avatarId: id }),
       setUserGender: (gender) => set({ userGender: gender }),
+
+      // Safely manage points, never dropping below 0
+      setPoints: (val) => set({ points: Math.max(0, val) }),
+      addPoints: (amount) => set((state) => ({ points: Math.max(0, state.points + amount) })),
+      deductPoints: (amount) => set((state) => ({ points: Math.max(0, state.points - amount) })),
     }),
     {
-      name: 'tribe-storage', // This is the key it saves under in localStorage
+      name: 'tribe-storage',
     }
   )
 );

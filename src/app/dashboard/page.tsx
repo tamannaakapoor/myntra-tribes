@@ -1,5 +1,6 @@
 'use client';
 import { useCartStore } from '@/store/useCartStore';
+import { useTribeStore } from '@/store/useTribeStore';
 import { ShoppingBag } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -9,7 +10,6 @@ import {
   ThumbsUp, Palette, Image as ImageIcon, Wand2, ArrowRight, BookOpen
 } from 'lucide-react';
 
-// --- FIXED NAV MINI AVATAR ---
 function NavAvatar({ skinTone, hairStyle }: { skinTone: string, hairStyle: string }) {
   return (
     <svg viewBox="40 20 120 120" className="w-full h-full pt-2 drop-shadow-sm">
@@ -35,7 +35,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [avatarConfig, setAvatarConfig] = useState({ skin_color: '#E0B594', hair: 'Long' });
-  const [points, setPoints] = useState(500);
+  
+  // GLOBAL STATE
+  const globalPoints = useTribeStore((state) => state.points);
+  const setGlobalPoints = useTribeStore((state) => state.setPoints);
   const cartCount = useCartStore((state) => state.getTotalItems());
 
   const getApiUrl = () => {
@@ -45,7 +48,6 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    // 1. Load Username
     const userStr = localStorage.getItem('tribe_user');
     if (userStr) {
       try {
@@ -55,16 +57,18 @@ export default function DashboardPage() {
       } catch (e) {}
     }
 
-    // 2. Load Persistent Points
-    const savedPoints = localStorage.getItem('tribe_points');
-    if (savedPoints) {
-      setPoints(Number(savedPoints));
-    } else {
-      localStorage.setItem('tribe_points', '500'); 
+    // SYNC POINTS WITH DB ON LOAD
+    const token = localStorage.getItem('tribe_jwt');
+    if (token) {
+      fetch(`${getApiUrl()}/user/me`, { headers: { "Authorization": `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.user?.points !== undefined) {
+             setGlobalPoints(Math.max(0, data.user.points)); // Enforce Math.max everywhere
+          }
+        }).catch(err => console.warn("Background point sync failed."));
     }
 
-    // 3. Load Avatar
-    const token = localStorage.getItem('tribe_jwt');
     const fetchAvatar = async () => {
       if (!token) return;
       try {
@@ -72,18 +76,15 @@ export default function DashboardPage() {
         const data = await res.json();
         const avatarData = data.avatar || data.data || data;
         if (res.ok && avatarData && avatarData.skin_color) setAvatarConfig(avatarData);
-      } catch (error) {
-        console.warn("Could not fetch avatar for navbar.");
-      }
+      } catch (error) {}
     };
     fetchAvatar();
-  }, []);
+  }, [setGlobalPoints]);
 
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans relative overflow-x-hidden pb-20">
       <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-[#ff3f6c]/15 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
 
-      {/* --- NAVBAR --- */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-[#FBCFE8]/50">
         <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -105,20 +106,20 @@ export default function DashboardPage() {
 
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 bg-[#ff3f6c]/10 text-[#ff3f6c] px-4 py-2 rounded-full font-bold text-sm">
-              <Trophy className="w-4 h-4" /> {points} pts
+              <Trophy className="w-4 h-4" /> {Math.max(0, globalPoints)} pts
             </div>
             
             <button onClick={() => router.push('/persona')} className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ring-2 ring-transparent hover:ring-[#ff3f6c]/30" style={{ backgroundColor: `${avatarConfig.skin_color}40` }}>
                <NavAvatar skinTone={avatarConfig.skin_color} hairStyle={avatarConfig.hair} />
             </button>
             <button onClick={() => router.push('/checkout')} className="relative p-2 hover:bg-black/5 rounded-full transition-colors ml-4">
-  <ShoppingBag className="w-5 h-5 text-[#111111]" />
-  {cartCount > 0 && (
-    <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
-      {cartCount}
-    </div>
-  )}
-</button>
+              <ShoppingBag className="w-5 h-5 text-[#111111]" />
+              {cartCount > 0 && (
+                <div className="absolute -top-1 -right-1 bg-[#ff3f6c] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                  {cartCount}
+                </div>
+              )}
+            </button>
 
             <button onClick={() => { localStorage.clear(); router.push('/auth'); }} className="text-[#888888] hover:text-black transition-colors">
               <LogOut className="w-5 h-5" />
@@ -129,7 +130,6 @@ export default function DashboardPage() {
 
       <div className="max-w-[1400px] mx-auto px-6 pt-32 relative z-10">
         
-        {/* --- HERO SECTION --- */}
         <section className="max-w-3xl mb-16">
           <p className="text-[11px] font-bold tracking-[0.25em] text-[#ff3f6c] uppercase mb-6 flex items-center gap-2">
             Welcome{username ? `, ${username}` : ''} <span className="text-[#888888]">• Myntra Tribes</span>
@@ -152,7 +152,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- NEW ACADEMY BANNER --- */}
         <section className="mb-24">
           <div 
             onClick={() => router.push('/academy')}
@@ -190,7 +189,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- TRIBES SHOWCASE --- */}
         <section className="mb-24">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="group relative h-[400px] rounded-[2rem] overflow-hidden shadow-xl">
@@ -225,7 +223,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- LIVE LEADERBOARD --- */}
         <section className="mb-24">
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -289,7 +286,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- RESTORED FEATURED LOOKBOOKS --- */}
         <section className="mb-24">
           <div className="flex items-end justify-between mb-8">
             <div>
@@ -342,7 +338,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* --- APP FEATURES --- */}
         <section>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-[#FBCFE8]/30 hover:shadow-md transition-all">

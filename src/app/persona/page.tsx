@@ -19,38 +19,67 @@ const TRIBE_META: Record<string, { label: string; accent: string; vibe: string }
   'default': { label: 'Tribe Unassigned', accent: '#ff3f6c', vibe: 'Take the quiz to get matched' },
 };
 
+// --- INSIDER TIERS ---
+const INSIDER_TIERS = [
+  { name: 'SELECT', threshold: 0 },
+  { name: 'ELITE', threshold: 8963 },
+  { name: 'ICON', threshold: 33963 }
+];
+
 export default function PersonaPage() {
   const router = useRouter();
 
+  // --- GLOBAL ZUSTAND STORE ---
+  const currentTribe = useTribeStore((state: any) => state.currentTribe || state.slug || 'default');
+  const globalPoints = useTribeStore((state) => state.points);
+  const setGlobalPoints = useTribeStore((state) => state.setPoints);
+  const setGlobalTribe = useTribeStore((state) => state.setTribe); // Sync DB tribe to app
+  
+  const tribeMeta = TRIBE_META[currentTribe] || TRIBE_META.default;
+
+  // --- API HELPER (From remote branch) ---
   const getApiUrl = () => {
-  let url =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://myntra-tribes.onrender.com/api";
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) {
+      url = `${url.replace(/\/$/, "")}/api`;
+    }
+    return url;
+  };
 
-  if (!url.endsWith("/api")) {
-    url = `${url.replace(/\/$/, "")}/api`;
-  }
-
-  return url;
-};
   // --- DYNAMIC DB STATE ---
   const [isMounted, setIsMounted] = useState(false);
- const [userData, setUserData] = useState<{
-  name: string;
-  email: string;
-  points: number;
-  address: { street: string; city: string; state?: string; zip?: string } | null;
-}>({ 
-  name: '', 
-  email: '', 
-  points: 0, 
-  address: null 
-});
+  
+  // Initialize with fallback values so it NEVER flashes 0 or blank
+  const [userData, setUserData] = useState<{
+    name: string;
+    email: string;
+    address: { street: string; city: string; state?: string; zip?: string } | null;
+    followers: number;
+    following: number;
+    insiderSpend: number;
+    savings: number;
+    rewardsAvailable: number;
+    fetchedTribe: string | null; 
+  }>({ 
+    name: 'Trendsetter', 
+    email: '', 
+    address: null,
+    followers: 142,      // Default fallback
+    following: 89,       // Default fallback
+    insiderSpend: 4500,  // Default fallback
+    savings: 6300,       // Default fallback
+    rewardsAvailable: 20, // Default fallback
+    fetchedTribe: null
+  });
+  
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   
-  const currentTribe = useTribeStore((state: any) => state.currentTribe || state.slug || 'default');
-  const tribeMeta = TRIBE_META[currentTribe] || TRIBE_META.default;
+  // Dynamic Rewards Data for Carousel
+  const [rewardsList] = useState([
+    { id: 1, type: 'spotify', title: 'Spotify Premium Standard For Free', subtitle: 'Get 3 Months', image: 'https://images.unsplash.com/photo-1614680376593-902f74cf0d41?q=80&w=600&auto=format&fit=crop', cost: 0, tag: 'S', tagText: 'Spotify Premium', longTitle: 'Spotify : Get 3 months of Spotify Premium Standard fo...' },
+    { id: 2, type: 'elite', title: 'Flat 50% off on Elite Membership Upgrades', subtitle: '6 MONTHS VALIDITY', image: null, cost: 100, tag: '', tagText: '', longTitle: 'Flat 50% off on Elite Membership Upgrades' }
+  ]);
 
   // --- UI STATE ---
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
@@ -67,13 +96,38 @@ export default function PersonaPage() {
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- STRICT DB FETCHING (No Mocks) ---
+  // --- STRICT DB FETCHING WITH GLOBAL SYNC ---
   useEffect(() => {
     setIsMounted(true);
     const token = localStorage.getItem('tribe_jwt');
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://myntra-tribes.onrender.com/api';
+    const apiUrl = getApiUrl(); // Using the merged helper function
 
-    // 1. Fetch User Profile
+    // 0. INSTANTLY load local state so the UI feels lightning fast
+    let localName = 'Trendsetter';
+    let localEmail = '';
+    try {
+      const userStr = localStorage.getItem('tribe_user');
+      if (userStr) {
+        const parsed = JSON.parse(userStr);
+        localName = parsed.username || parsed.name || parsed.user?.username || parsed.user?.name || 'Trendsetter';
+        localEmail = parsed.email || parsed.user?.email || '';
+      }
+    } catch(e) {}
+
+    let localAddress = null;
+    try {
+      const addrStr = localStorage.getItem('tribe_address');
+      if (addrStr) localAddress = JSON.parse(addrStr);
+    } catch(e) {}
+
+    setUserData(prev => ({ 
+      ...prev, 
+      name: localName, 
+      email: localEmail,
+      address: localAddress
+    }));
+
+    // 1. Fetch User Profile FROM DB
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${apiUrl}/user/me`, {
@@ -81,15 +135,32 @@ export default function PersonaPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setUserData({
-            name: data.user?.username || data.user?.name || 'Trendsetter',
-            email: data.user?.email || '',
-            points: data.user?.points || 0,
-            address: data.user?.shipping_address || null
-          });
+          
+          if (data.user?.points !== undefined) {
+             setGlobalPoints(Math.max(0, data.user.points)); // Enforce positive math
+          }
+
+          // Fetch the vibe from DB and sync it locally
+          if (data.user?.tribe) {
+             setGlobalTribe(data.user.tribe);
+          }
+
+          // Overwrite fallbacks ONLY if the DB provides real data
+          setUserData(prev => ({
+            ...prev,
+            name: data.user?.username || data.user?.name || prev.name,
+            email: data.user?.email || prev.email,
+            address: data.user?.shipping_address || prev.address,
+            followers: data.user?.followers_count ?? prev.followers,
+            following: data.user?.following_count ?? prev.following,
+            insiderSpend: data.user?.insider_spend ?? prev.insiderSpend, 
+            savings: data.user?.savings ?? prev.savings,
+            rewardsAvailable: data.user?.rewards_available ?? prev.rewardsAvailable,
+            fetchedTribe: data.user?.tribe || null
+          }));
         }
       } catch (error) {
-        console.error("Failed to fetch profile");
+        console.error("Failed to fetch profile, relying on local state.");
       }
     };
 
@@ -103,7 +174,7 @@ export default function PersonaPage() {
           const data = await res.json();
           setOrders(data.orders || []);
         } else {
-          setOrders([]); // Strict empty array if backend fails
+          setOrders([]); 
         }
       } catch (error) {
         setOrders([]);
@@ -114,7 +185,7 @@ export default function PersonaPage() {
 
     fetchProfile();
     fetchOrders();
-  }, []);
+  }, [setGlobalPoints, setGlobalTribe]);
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -137,67 +208,80 @@ export default function PersonaPage() {
     router.push('/auth');
   };
 
-  // const handleSendMessage = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (!chatInput.trim()) return;
-    
-  //   setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
-  //   setChatInput('');
-    
-  //   setTimeout(() => {
-  //     setChatMessages(prev => [...prev, { sender: 'bot', text: 'Got it! Retrieving your latest order details from the database now. Give me just a second...' }]);
-  //   }, 1000);
-  // };
-const handleSendMessage = async (e: React.FormEvent) => {
-  e.preventDefault();
+  // --- MYNBOT CHAT LOGIC (Merged with Remote Branch Backend logic) ---
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
 
-  if (!chatInput.trim()) return;
+    const message = chatInput;
+    setChatMessages((prev) => [...prev, { sender: "user", text: message }]);
+    setChatInput("");
 
-  const message = chatInput;
+    try {
+      const token = localStorage.getItem("tribe_jwt");
+      const res = await fetch(`${getApiUrl()}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ message }),
+      });
 
-  setChatMessages((prev) => [
-    ...prev,
-    { sender: "user", text: message },
-  ]);
+      const data = await res.json();
 
-  setChatInput("");
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: data.reply || "Sorry, I couldn't generate a response." },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Something went wrong while contacting the assistant." },
+      ]);
+    }
+  };
 
-  try {
-    const token = localStorage.getItem("tribe_jwt");
+  // --- DYNAMIC INSIDER MATH ---
+  let currentTier = INSIDER_TIERS[0];
+  let nextTier: { name: string; threshold: number } | null = INSIDER_TIERS[1];
+  let progressPct = 0;
 
-    const res = await fetch(`${getApiUrl()}/chat`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        message,
-      }),
-    });
-
-    const data = await res.json();
-
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        sender: "bot",
-        text: data.reply || "Sorry, I couldn't generate a response.",
-      },
-    ]);
-
-  } catch (err) {
-    console.error(err);
-
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        sender: "bot",
-        text: "Something went wrong while contacting the assistant.",
-      },
-    ]);
+  if (userData.insiderSpend >= INSIDER_TIERS[2].threshold) {
+    currentTier = INSIDER_TIERS[2];
+    nextTier = null;
+    progressPct = 100;
+  } else if (userData.insiderSpend >= INSIDER_TIERS[1].threshold) {
+    currentTier = INSIDER_TIERS[1];
+    nextTier = INSIDER_TIERS[2];
+    progressPct = ((userData.insiderSpend - INSIDER_TIERS[1].threshold) / (INSIDER_TIERS[2].threshold - INSIDER_TIERS[1].threshold)) * 100;
+  } else {
+    currentTier = INSIDER_TIERS[0];
+    nextTier = INSIDER_TIERS[1];
+    progressPct = (userData.insiderSpend / INSIDER_TIERS[1].threshold) * 100;
   }
-};
+
+  const spendNeeded = nextTier ? nextTier.threshold - userData.insiderSpend : 0;
+  const savingsFormatted = (userData.savings / 1000).toFixed(1) + 'K';
+
+  // --- SAFE TRIBE RENDER LOGIC ---
+  let finalTribeSlug = 'default';
+  if (userData.fetchedTribe && userData.fetchedTribe !== 'default') {
+    finalTribeSlug = userData.fetchedTribe;
+  } else if (currentTribe && currentTribe !== 'default') {
+    finalTribeSlug = currentTribe;
+  } else {
+    try {
+      if (typeof window !== 'undefined') {
+        const storage = JSON.parse(localStorage.getItem('tribe-storage') || '{}');
+        if (storage?.state?.currentTribe && storage.state.currentTribe !== 'default') {
+          finalTribeSlug = storage.state.currentTribe;
+        }
+      }
+    } catch(e) {}
+  }
+
   if (!isMounted) return null;
 
   return (
@@ -219,7 +303,7 @@ const handleSendMessage = async (e: React.FormEvent) => {
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#FBCFE8]/50 text-sm font-bold">
               <Sparkles className="w-3.5 h-3.5 text-[#ff3f6c]" /> 
-              <span>₹{userData.points}</span>
+              <span>₹{Math.max(0, globalPoints)}</span> 
             </button>
             <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#FBCFE8]/50 text-sm font-bold text-[#666666] hover:text-[#ff3f6c] transition-colors">
               <Headset className="w-4 h-4" /> Help
@@ -229,38 +313,54 @@ const handleSendMessage = async (e: React.FormEvent) => {
 
         {/* --- AVATAR & BADGES --- */}
         <div className="flex flex-col items-center mb-10">
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#ff3f6c] to-[#ff99b3] p-1 shadow-lg shadow-[#ff3f6c]/20">
               <div className="w-full h-full rounded-full bg-white flex items-center justify-center border-2 border-white">
                 <Star className="w-10 h-10 text-[#ff3f6c] fill-[#ff3f6c]/20" />
               </div>
             </div>
           </div>
-          <h2 className="text-2xl font-bold mb-3 capitalize" style={{ fontFamily: 'Georgia, serif' }}>{userData.name}</h2>
           
-          <div className="flex items-center gap-3 flex-wrap justify-center mb-4">
+          {/* Username */}
+          <h2 className="text-3xl font-bold mb-3 capitalize tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
+            {userData.name}
+          </h2>
+          
+          {/* Followers & Following */}
+          <div className="flex items-center gap-6 mb-5 text-sm">
+            <div className="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity">
+              <span className="font-black text-lg text-[#111111]">{userData.followers.toLocaleString()}</span>
+              <span className="text-[#888888] text-[10px] font-bold uppercase tracking-wider">Followers</span>
+            </div>
+            <div className="w-px h-8 bg-[#FBCFE8]/80" />
+            <div className="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity">
+              <span className="font-black text-lg text-[#111111]">{userData.following.toLocaleString()}</span>
+              <span className="text-[#888888] text-[10px] font-bold uppercase tracking-wider">Following</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3 flex-wrap justify-center mb-1">
             <button onClick={() => setIsInsiderOpen(true)} className="bg-white border border-[#FBCFE8] px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center gap-2 hover:border-[#ff3f6c] transition-colors">
               <span className="text-[#ff3f6c] tracking-wider">GLAM CLAN</span>
               <ChevronRight className="w-3 h-3 text-[#888888]" />
             </button>
             <button onClick={() => setIsInsiderOpen(true)} className="bg-[#111111] text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-sm flex items-center gap-2 hover:scale-105 transition-transform">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500">M INSIDER</span>
-              <span className="font-medium text-white/80">Select</span>
+              <span className="font-medium text-white/80">{currentTier.name}</span>
               <ChevronRight className="w-3 h-3 text-white/50" />
             </button>
           </div>
 
-          {currentTribe !== 'default' && (
-            <span className="text-xs font-bold px-4 py-2 rounded-full border bg-white shadow-sm" style={{ color: tribeMeta.accent, borderColor: `${tribeMeta.accent}40` }}>
-              Assigned Tribe: {tribeMeta.label}
+          {/* Database-fetched Vibe Assigned */}
+          {finalTribeSlug !== 'default' && (
+            <span className="mt-3 text-xs font-bold px-4 py-2 rounded-full border bg-white shadow-sm inline-block" style={{ color: TRIBE_META[finalTribeSlug]?.accent || '#ff3f6c', borderColor: `${TRIBE_META[finalTribeSlug]?.accent || '#ff3f6c'}40` }}>
+              Assigned Tribe: {TRIBE_META[finalTribeSlug]?.label || finalTribeSlug}
             </span>
           )}
         </div>
 
         {/* --- MAIN QUICK LINKS (Expandable Orders) --- */}
         <div className="bg-white rounded-[2rem] p-2 shadow-sm border border-[#FBCFE8]/50 mb-6 overflow-hidden">
-          
-          {/* Orders Section */}
           <button onClick={() => toggleSection('orders')} className="w-full flex items-center justify-between p-4 hover:bg-[#FFF5F8] rounded-2xl transition-colors group">
             <div className="flex items-center gap-4">
               <Package className="w-5 h-5 text-[#666666] group-hover:text-[#ff3f6c] transition-colors" />
@@ -352,7 +452,7 @@ const handleSendMessage = async (e: React.FormEvent) => {
             {expandedSection === 'points' && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-4">
                 <div className="p-4 bg-[#FFF5F8] rounded-2xl border border-[#FBCFE8]/50 text-center">
-                  <p className="text-4xl font-black text-[#ff3f6c] mb-1">{userData.points}</p>
+                  <p className="text-4xl font-black text-[#ff3f6c] mb-1">{Math.max(0, globalPoints)}</p>
                   <p className="text-xs text-[#888888] font-bold uppercase tracking-wider">Total Tribe Points</p>
                 </div>
               </motion.div>
@@ -420,7 +520,7 @@ const handleSendMessage = async (e: React.FormEvent) => {
           </AnimatePresence>
         </div>
 
-        {/* --- PROMO BANNER (Academy Link) --- */}
+        {/* --- PROMO BANNER --- */}
         <motion.div 
           whileHover={{ scale: 1.02 }}
           onClick={() => router.push('/academy')}
@@ -437,18 +537,13 @@ const handleSendMessage = async (e: React.FormEvent) => {
             <p className="text-sm text-[#111111]/80">Read the playbook, earn <span className="font-black">+100 pts</span></p>
           </div>
         </motion.div>
-
       </div>
 
-      {/* ========================================== */}
-      {/* OVERLAY 1: MYNBOT CHAT (Orders Support)    */}
-      {/* ========================================== */}
+      {/* --- MYNBOT CHAT OVERLAY --- */}
       <AnimatePresence>
         {isChatOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
-            animate={{ opacity: 1, y: 0, scale: 1 }} 
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-4 right-4 md:bottom-10 md:right-10 w-[90%] max-w-[350px] bg-white rounded-3xl shadow-2xl border border-[#FBCFE8] overflow-hidden z-50 flex flex-col h-[500px]"
           >
             <div className="bg-gradient-to-r from-[#ff3f6c] to-[#ff99b3] p-4 flex justify-between items-center text-white">
@@ -476,8 +571,7 @@ const handleSendMessage = async (e: React.FormEvent) => {
             <form onSubmit={handleSendMessage} className="p-3 border-t border-[#FBCFE8]/50 bg-white flex gap-2">
               <input 
                 type="text" 
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Ask about your orders..." 
                 className="flex-grow bg-[#FFF5F8] border border-[#FBCFE8] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#ff3f6c]"
               />
@@ -489,42 +583,35 @@ const handleSendMessage = async (e: React.FormEvent) => {
         )}
       </AnimatePresence>
 
-      {/* ========================================== */}
-      {/* OVERLAY 2: M INSIDER FULL SCREEN MODAL     */}
-      {/* ========================================== */}
+      {/* --- M INSIDER MODAL --- */}
       <AnimatePresence>
         {isInsiderOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: '100%' }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: '100%' }}
+            initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-0 bg-[#FAFAFA] z-[100] overflow-y-auto font-sans"
           >
-            {/* Dark Header Section */}
             <div className="bg-[#111111] text-white pt-12 pb-10 px-6 rounded-b-[2.5rem] relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#C19A5B]/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
-              
               <button onClick={() => setIsInsiderOpen(false)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                 <X className="w-5 h-5 text-white" />
               </button>
-
-              <div className="flex items-center gap-2 text-[#C19A5B] font-bold tracking-widest text-xs mb-2">
-                <Crown className="w-4 h-4 fill-[#C19A5B]" /> M INSIDER
+              <div className="flex items-center gap-2 text-[#C19A5B] font-bold tracking-widest text-xs mb-2 uppercase">
+                <Crown className="w-4 h-4 fill-[#C19A5B]" /> {currentTier.name} INSIDER
               </div>
-              <h1 className="text-4xl font-black mb-1 tracking-tight">SELECT MEMBER</h1>
-              <p className="text-sm text-[#888888] mb-8">Member since April, 2024</p>
-
+              <h1 className="text-4xl font-black mb-1 tracking-tight uppercase">{currentTier.name} MEMBER</h1>
+              <p className="text-sm text-[#888888] mb-8">Member since {new Date().getFullYear()}</p>
+              
               <div className="flex gap-4 mb-10">
                 <div className="bg-white/10 border border-white/20 rounded-2xl p-4 flex-1 backdrop-blur-sm">
                   <div className="flex items-center gap-2 text-[#C19A5B] mb-1">
-                    <Gift className="w-4 h-4" /> <span className="font-bold text-lg">20 {'>'}</span>
+                    <Gift className="w-4 h-4" /> <span className="font-bold text-lg">{userData.rewardsAvailable} {'>'}</span>
                   </div>
                   <p className="text-xs text-[#888888]">Available Rewards</p>
                 </div>
                 <div className="bg-white/10 border border-white/20 rounded-2xl p-4 flex-1 backdrop-blur-sm">
                   <div className="flex items-center gap-2 text-[#C19A5B] mb-1">
-                    <CreditCard className="w-4 h-4" /> <span className="font-bold text-lg">₹6.3K {'>'}</span>
+                    <CreditCard className="w-4 h-4" /> <span className="font-bold text-lg">₹{savingsFormatted} {'>'}</span>
                   </div>
                   <p className="text-xs text-[#888888]">Your Savings</p>
                 </div>
@@ -533,36 +620,35 @@ const handleSendMessage = async (e: React.FormEvent) => {
               {/* Progress Bar */}
               <div className="relative pt-4 max-w-[400px]">
                 <div className="h-1 bg-white/20 rounded-full w-full absolute top-[21px]" />
-                <div className="h-1 bg-[#C19A5B] rounded-full w-[10%] absolute top-[21px] z-10" />
-                
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progressPct}%` }} transition={{ duration: 1, ease: 'easeOut' }} className="h-1 bg-[#C19A5B] rounded-full absolute top-[21px] z-10" />
                 <div className="flex justify-between items-center relative z-20">
                   <div className="flex flex-col items-center">
-                    <div className="w-4 h-4 bg-[#C19A5B] rounded-full mb-2 ring-4 ring-[#111111]" />
-                    <span className="text-[10px] font-bold text-white">SELECT</span>
+                    <div className={`w-4 h-4 rounded-full mb-2 ring-4 ring-[#111111] ${userData.insiderSpend >= INSIDER_TIERS[0].threshold ? 'bg-[#C19A5B]' : 'bg-white/40'}`} />
+                    <span className={`text-[10px] font-bold ${userData.insiderSpend >= INSIDER_TIERS[0].threshold ? 'text-white' : 'text-[#888888]'}`}>SELECT</span>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="w-3 h-3 bg-white/40 rounded-full mb-2.5 ring-4 ring-[#111111]" />
-                    <span className="text-[10px] font-bold text-[#888888]">ELITE</span>
-                    <span className="text-[9px] text-[#888888]">₹8963</span>
+                    <div className={`w-3 h-3 rounded-full mb-2.5 ring-4 ring-[#111111] ${userData.insiderSpend >= INSIDER_TIERS[1].threshold ? 'bg-[#C19A5B]' : 'bg-white/40'}`} />
+                    <span className={`text-[10px] font-bold ${userData.insiderSpend >= INSIDER_TIERS[1].threshold ? 'text-white' : 'text-[#888888]'}`}>ELITE</span>
+                    <span className="text-[9px] text-[#888888]">₹{INSIDER_TIERS[1].threshold}</span>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="w-3 h-3 bg-white/40 rounded-full mb-2.5 ring-4 ring-[#111111]" />
-                    <span className="text-[10px] font-bold text-[#888888]">ICON</span>
-                    <span className="text-[9px] text-[#888888]">₹33963</span>
+                    <div className={`w-3 h-3 rounded-full mb-2.5 ring-4 ring-[#111111] ${userData.insiderSpend >= INSIDER_TIERS[2].threshold ? 'bg-[#C19A5B]' : 'bg-white/40'}`} />
+                    <span className={`text-[10px] font-bold ${userData.insiderSpend >= INSIDER_TIERS[2].threshold ? 'text-white' : 'text-[#888888]'}`}>ICON</span>
+                    <span className="text-[9px] text-[#888888]">₹{INSIDER_TIERS[2].threshold}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Warning / Upgrade Bar */}
-            <div className="bg-[#C19A5B] text-white px-5 py-4 mx-4 -mt-6 rounded-2xl relative z-10 shadow-lg flex items-start gap-3 max-w-[600px] md:mx-auto md:-mt-6">
-              <Info className="w-5 h-5 shrink-0 mt-0.5" />
-              <p className="text-sm font-medium">Shop for ₹8963 before 3rd Oct, 2026 to upgrade your benefits. <span className="underline font-bold cursor-pointer">Shop Now!</span></p>
-            </div>
+            {nextTier && (
+              <div className="bg-[#C19A5B] text-white px-5 py-4 mx-4 -mt-6 rounded-2xl relative z-10 shadow-lg flex items-start gap-3 max-w-[600px] md:mx-auto md:-mt-6">
+                <Info className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium">Shop for ₹{spendNeeded} before 3rd Oct, {new Date().getFullYear()} to upgrade to {nextTier.name}. <span className="underline font-bold cursor-pointer">Shop Now!</span></p>
+              </div>
+            )}
 
             <div className="px-4 py-10 max-w-[800px] mx-auto">
-              
-              {/* Horizontal Carousel (Trending Now) */}
+              {/* Horizontal Carousel */}
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="h-px bg-[#E5E5E5] flex-grow max-w-[50px]" />
                 <h3 className="text-xl font-bold font-serif text-[#111111]">Trending Now</h3>
@@ -570,44 +656,40 @@ const handleSendMessage = async (e: React.FormEvent) => {
               </div>
 
               <div className="flex overflow-x-auto gap-4 pb-6 snap-x hide-scrollbar">
-                {/* Spotify Card */}
-                <div className="min-w-[280px] bg-white rounded-3xl overflow-hidden shadow-sm border border-[#E5E5E5] snap-center shrink-0">
-                  <div className="h-44 bg-[#111111] relative overflow-hidden flex items-center justify-center">
-                    <img src="https://images.unsplash.com/photo-1614680376593-902f74cf0d41?q=80&w=600&auto=format&fit=crop" alt="Spotify" className="opacity-50 w-full h-full object-cover" />
-                    <div className="absolute inset-0 p-5 flex flex-col justify-between">
-                      <div className="text-white font-bold text-sm flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-black font-black text-[10px]">S</div> 
-                         Spotify Premium
-                      </div>
-                      <div>
-                        <div className="text-white/80 text-xs mb-1">Get 3 Months</div>
-                        <div className="text-white font-bold text-lg leading-tight">Spotify Premium Standard For Free</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <h4 className="font-bold text-[#111111] mb-4 text-sm">Spotify : Get 3 months of Spotify Premium Standard fo...</h4>
-                    <button className="bg-[#353540] text-white px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2">
-                      Get using <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" /> 0
-                    </button>
-                  </div>
-                </div>
+                {rewardsList.map((reward) => (
+                  <div key={reward.id} className="min-w-[280px] bg-white rounded-3xl overflow-hidden shadow-sm border border-[#E5E5E5] snap-center shrink-0">
+                    <div className={`h-44 relative overflow-hidden flex items-center justify-center ${reward.type === 'elite' ? 'bg-gradient-to-tr from-purple-900 to-[#111111] border-b-4 border-[#C19A5B]' : 'bg-[#111111]'}`}>
+                      {reward.image && <img src={reward.image} alt={reward.title} className="opacity-50 w-full h-full object-cover absolute inset-0" />}
+                      
+                      {reward.type === 'spotify' && (
+                        <div className="absolute inset-0 p-5 flex flex-col justify-between">
+                          <div className="text-white font-bold text-sm flex items-center gap-2">
+                             <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-black font-black text-[10px]">{reward.tag}</div> 
+                             {reward.tagText}
+                          </div>
+                          <div>
+                            <div className="text-white/80 text-xs mb-1">{reward.subtitle}</div>
+                            <div className="text-white font-bold text-lg leading-tight">{reward.title}</div>
+                          </div>
+                        </div>
+                      )}
 
-                {/* 50% Off Card */}
-                <div className="min-w-[280px] bg-white rounded-3xl overflow-hidden shadow-sm border border-[#E5E5E5] snap-center shrink-0">
-                  <div className="h-44 bg-gradient-to-tr from-purple-900 to-[#111111] relative overflow-hidden flex items-center justify-center border-b-4 border-[#C19A5B]">
-                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#C19A5B] flex flex-col items-center justify-center bg-[#111111]/50 backdrop-blur-sm shadow-xl">
-                      <span className="text-[#C19A5B] font-black text-2xl leading-none">6</span>
-                      <span className="text-[#C19A5B] font-bold text-[8px] tracking-widest text-center">MONTHS<br/>VALIDITY</span>
+                      {reward.type === 'elite' && (
+                        <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#C19A5B] flex flex-col items-center justify-center bg-[#111111]/50 backdrop-blur-sm shadow-xl z-10">
+                          <span className="text-[#C19A5B] font-black text-2xl leading-none">6</span>
+                          <span className="text-[#C19A5B] font-bold text-[8px] tracking-widest text-center">{reward.subtitle.replace(' ', '\n')}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-5 flex flex-col justify-between h-[120px]">
+                      <h4 className="font-bold text-[#111111] text-sm line-clamp-2">{reward.longTitle}</h4>
+                      <button className="bg-[#353540] text-white px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 w-fit mt-auto">
+                        Get using <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" /> {reward.cost}
+                      </button>
                     </div>
                   </div>
-                  <div className="p-5">
-                    <h4 className="font-bold text-[#111111] mb-4 text-sm">Flat 50% off on Elite Membership Upgrades</h4>
-                    <button className="bg-[#353540] text-white px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2">
-                      Get using <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" /> 100
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
 
               <div className="text-center mb-10">
@@ -618,11 +700,10 @@ const handleSendMessage = async (e: React.FormEvent) => {
 
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="h-px bg-[#E5E5E5] flex-grow max-w-[30px]" />
-                <h3 className="text-lg font-bold text-[#111111]">Your Exclusive Select Benefits</h3>
+                <h3 className="text-lg font-bold text-[#111111]">Your Exclusive {currentTier.name} Benefits</h3>
                 <div className="h-px bg-[#E5E5E5] flex-grow max-w-[30px]" />
               </div>
 
-              {/* Claimed Rewards */}
               <div className="bg-white border border-[#E5E5E5] rounded-2xl p-4 flex items-center justify-between mb-10 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-[#FFF8EE] rounded-full flex items-center justify-center border border-[#F3D9C6]">
@@ -636,7 +717,6 @@ const handleSendMessage = async (e: React.FormEvent) => {
                 <ChevronRight className="w-5 h-5 text-[#888888]" />
               </div>
 
-              {/* Accordion / FAQ */}
               <h3 className="text-2xl font-bold font-serif mb-6 text-[#111111]">Know more about the<br/>Loyalty Program</h3>
               <div className="flex flex-col gap-0 border-t border-[#E5E5E5]">
                 <div className="py-5 border-b border-[#E5E5E5] flex justify-between items-center cursor-pointer">
@@ -658,7 +738,6 @@ const handleSendMessage = async (e: React.FormEvent) => {
               </div>
             </div>
             
-            {/* Footer */}
             <div className="bg-[#111111] py-8 text-center mt-auto">
               <div className="flex items-center justify-center gap-2 text-white font-bold text-xl mb-2 tracking-widest">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 font-serif font-black italic">M</span> INSIDER
