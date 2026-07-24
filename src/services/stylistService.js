@@ -23,20 +23,18 @@ const generateStylistResponse = async ({
   const { data: products, error: productError } = await supabase
     .from("products")
     .select(`
-      id,
-      full_name,
-      category,
-      price,
-      image_url,
-      product_url,
-      brand,
-      rating,
-      gender,
-      color
-    `)
+  id,
+  full_name,
+  category,
+  price,
+  brand,
+  color,
+  image_url,
+  product_url
+`)
     .eq("primary_tribe_id", profile.active_tribe_id)
     .order("rating", { ascending: false })
-    .limit(50);
+    .limit(20);
 
   if (productError) {
     throw new Error(productError.message);
@@ -46,7 +44,14 @@ const generateStylistResponse = async ({
   const filteredProducts = products.filter(product => {
     return Number(product.price) <= Number(budget);
   });
-
+const aiProducts = filteredProducts.map(product => ({
+  id: product.id,
+  name: product.full_name,
+  category: product.category,
+  price: product.price,
+  brand: product.brand,
+  color: product.color,
+}));
   // Temporary recommendation (will be replaced by AI)
 //   const recommendedProducts = filteredProducts.slice(0, 5);
 
@@ -60,11 +65,17 @@ const generateStylistResponse = async ({
 //   };
 // };
 // Create AI Prompt
+// const prompt = createStylistPrompt({
+//   occasion,
+//   budget,
+//   weather,
+//   products: filteredProducts,
+// });
 const prompt = createStylistPrompt({
   occasion,
   budget,
   weather,
-  products: filteredProducts,
+  products: aiProducts,
 });
 // 👇 Debug 1
 console.log("========== PROMPT ==========");
