@@ -82,15 +82,25 @@ const completion = await groq.chat.completions.create({
 // Parse AI Response
 let aiResponse;
 
-try {
-  aiResponse = JSON.parse(
-    completion.choices[0].message.content
-  );
-} catch (err) {
-  console.error("AI JSON Parse Error:", err);
+// try {
+//   aiResponse = JSON.parse(
+//     completion.choices[0].message.content
+//   );
+// }
+const rawResponse = completion.choices[0].message.content;
 
+console.log("========== RAW GROQ RESPONSE ==========");
+console.log(rawResponse);
+console.log("=======================================");
+
+try {
+  aiResponse = JSON.parse(rawResponse);
+} catch (err) {
+  console.error("AI JSON Parse Error");
+  console.error(rawResponse);
   throw new Error("AI returned invalid JSON.");
 }
+ 
 
 // Match selected ids to products
 const recommendedProducts = filteredProducts.filter(product =>
