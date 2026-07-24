@@ -58,7 +58,10 @@ const truefitRoutes = require("./routes/truefitRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const stylistRoutes = require("./routes/stylistRoutes");
 
+
+app.use("/api/stylist", stylistRoutes);
 app.use("/api/user", profileRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/truefit", truefitRoutes);
