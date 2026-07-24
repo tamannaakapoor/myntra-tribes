@@ -30,6 +30,9 @@ const {
   getFeed,
   like,
   unlike,
+   toggleLike,
+  postComment,
+  getLookbookComments,
 } = require("../controllers/lookbookController");
 
 // Public feed
@@ -50,5 +53,19 @@ router.get("/:id", getById);
 router.post("/:id/like",authenticateUser,like);
 
 router.delete("/:id/like",authenticateUser,unlike);
+router.post(
+  "/:id/toggle-like",
+  authenticateUser,
+  toggleLike
+);
+router.post(
+    "/:id/comments",
+    authenticateUser,
+    postComment
+);
 
+router.get(
+    "/:id/comments",
+    getLookbookComments
+);
 module.exports = router;

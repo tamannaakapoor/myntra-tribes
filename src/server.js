@@ -55,7 +55,12 @@ const aiRoutes = require("./routes/aiRoutes");
 const voteRoutes = require("./routes/voteRoutes");
 const gelaphaRoutes = require("./routes/gelaphaRoutes");
 const truefitRoutes = require("./routes/truefitRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
+app.use("/api/user", profileRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/truefit", truefitRoutes);
 
 app.use("/api/votes", voteRoutes);
@@ -73,6 +78,7 @@ app.use("/api/avatar", avatarRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/vision", visionRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

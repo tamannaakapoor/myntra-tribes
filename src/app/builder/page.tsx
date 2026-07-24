@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTribeStore } from '@/store/useTribeStore';
-import { ArrowLeft, Send, Search, Plus, X, ImagePlus, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Search, Plus, X, ImagePlus, Loader2, Sparkles, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface Product {
@@ -15,6 +15,7 @@ export interface Product {
   category: string;
   brand?: string;
   gender?: string;
+  full_name?: string;
 }
 
 const CATEGORIES = ['All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
@@ -67,9 +68,16 @@ export default function BuilderPage() {
   const [tags, setTags] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   
-  // AI Feature State
+  // Editorial AI Feature State
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   
+  // --- MynStylist AI Feature State ---
+  const [isStylistLoading, setIsStylistLoading] = useState(false);
+  const [occasion, setOccasion] = useState("");
+  const [budget, setBudget] = useState<number | "">("");
+  const [weather, setWeather] = useState("Hot");
+  const [aiReason, setAiReason] = useState("");
+
   const [avatarConfig, setAvatarConfig] = useState<any>(null);
 
   const getApiUrl = () => {
@@ -110,12 +118,8 @@ export default function BuilderPage() {
             ? currentTribe
             : "neon-static";
 
-        let endpoint = `${getApiUrl()}/products?tribe=${encodeURIComponent(tribeSlug)}`;
-        
-        if (searchQuery) {
-          endpoint += `&search=${encodeURIComponent(searchQuery)}`;
-        }
-
+        let endpoint = `${getApiUrl()}/products?tribe=${encodeURIComponent(tribeSlug)}&page=1&limit=500`;
+      
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Backend responded with an error");
         
@@ -150,7 +154,7 @@ export default function BuilderPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, currentTribe]);
 
-  // --- 👇 NEW AI GENERATOR FUNCTION ---
+  // --- Editorial Auto-Generator ---
   const handleAIGenerate = async () => {
     if (canvasItems.length === 0) return;
     
@@ -165,8 +169,6 @@ export default function BuilderPage() {
         items: canvasItems.map(p => p.name)
       };
 
-      console.log("🚀 Sending to AI Editor:", payload);
-
       const response = await fetch(`${getApiUrl()}/ai/editorial`, {
         method: "POST",
         headers: { 
@@ -176,11 +178,7 @@ export default function BuilderPage() {
         body: JSON.stringify(payload)
       });
 
-      if (!response.ok) {
-  const errText = await response.text();
-  console.error("🛑 Backend Rejected AI Request:", errText);
-  throw new Error(`AI Endpoint Failed: ${response.status}`);
-}
+      if (!response.ok) throw new Error(`AI Endpoint Failed: ${response.status}`);
 
       const data = await response.json();
 
@@ -193,10 +191,51 @@ export default function BuilderPage() {
       }
     } catch (error) {
       console.error("AI Generation Error:", error);
-      // Native browser alert or toast depending on what you prefer
       alert("Couldn't generate editorial. Please try again.");
     } finally {
       setIsGeneratingAI(false);
+    }
+  };
+
+  // --- 👇 NEW: MynStylist Outfit Generator ---
+  const handleAIStylist = async () => {
+    if (!occasion || !budget) return alert("Please enter an occasion and a budget!");
+
+    setIsStylistLoading(true);
+
+    try {
+      const token = localStorage.getItem("tribe_jwt");
+
+      const response = await fetch(
+        `${getApiUrl()}/stylist/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { "Authorization": `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            occasion,
+            budget: Number(budget),
+            weather,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success && data.outfit) {
+        setProducts(data.outfit.products);
+        setAiReason(data.outfit.reason);
+      } else {
+        throw new Error("Invalid response from MynStylist");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("MynStylist couldn't generate an outfit. Ensure your backend endpoint is live!");
+    } finally {
+      setIsStylistLoading(false);
     }
   };
   
@@ -249,17 +288,44 @@ export default function BuilderPage() {
   const fontFam = themeConfig?.font || 'Georgia, serif';
   const customFont = fontFam.includes(' ') ? `'${fontFam}', serif` : `${fontFam}, sans-serif`;
 
-  const filteredProducts = products.filter(p => {
-    const pCat = (p.category || '').toLowerCase();
-    const aCat = activeCat.toLowerCase();
-    if (activeCat === 'All') return true;
-    if (aCat === 'tops') return pCat.includes('shirt') || pCat.includes('top') || pCat.includes('kurta') || pCat.includes('tshirt');
-    if (aCat === 'bottoms') return pCat.includes('jean') || pCat.includes('trouser') || pCat.includes('pant') || pCat.includes('short') || pCat.includes('skirt') || pCat.includes('track');
-    if (aCat === 'outerwear') return pCat.includes('jacket') || pCat.includes('sweatshirt') || pCat.includes('sweater') || pCat.includes('coat') || pCat.includes('hoodie');
-    if (aCat === 'shoes') return pCat.includes('shoe') || pCat.includes('sandal') || pCat.includes('sneaker') || pCat.includes('boot') || pCat.includes('flip') || pCat.includes('heel');
-    if (aCat === 'accessories') return pCat.includes('bag') || pCat.includes('watch') || pCat.includes('belt') || pCat.includes('jewel') || pCat.includes('sunglass') || pCat.includes('wallet') || pCat.includes('backpack');
-    return pCat.includes(aCat);
-  });
+ const filteredProducts = products.filter((p) => {
+  // Search
+  const matchesSearch =
+    searchQuery.trim() === "" ||
+    (p.full_name || p.name || "")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()) ||
+    (p.brand || "")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase()) ||
+    (p.category || "")
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
+  // Category
+  const pCat = (p.category || "").toLowerCase();
+  const aCat = activeCat.toLowerCase();
+
+  let matchesCategory = true;
+
+  if (activeCat !== "All") {
+    if (aCat === "tops") {
+      matchesCategory = pCat.includes("shirt") || pCat.includes("top") || pCat.includes("kurta") || pCat.includes("tshirt");
+    } else if (aCat === "bottoms") {
+      matchesCategory = pCat.includes("jean") || pCat.includes("trouser") || pCat.includes("pant") || pCat.includes("short") || pCat.includes("skirt") || pCat.includes("track");
+    } else if (aCat === "outerwear") {
+      matchesCategory = pCat.includes("jacket") || pCat.includes("hoodie") || pCat.includes("coat") || pCat.includes("sweater") || pCat.includes("sweatshirt");
+    } else if (aCat === "shoes") {
+      matchesCategory = pCat.includes("shoe") || pCat.includes("sneaker") || pCat.includes("heel") || pCat.includes("boot") || pCat.includes("sandal");
+    } else if (aCat === "accessories") {
+      matchesCategory = pCat.includes("bag") || pCat.includes("watch") || pCat.includes("belt") || pCat.includes("wallet") || pCat.includes("jewel");
+    } else {
+      matchesCategory = pCat.includes(aCat);
+    }
+  }
+
+  return matchesSearch && matchesCategory;
+});
 
   const addToCanvas = (product: Product) => setCanvasItems(prev => [...prev, product]);
   const removeFromCanvas = (indexToRemove: number) => setCanvasItems(prev => prev.filter((_, idx) => idx !== indexToRemove));
@@ -298,11 +364,69 @@ export default function BuilderPage() {
           
           {/* LEFT COLUMN: PRODUCTS CATALOG */}
           <div className="lg:col-span-7 flex flex-col gap-6 p-6 md:p-8 rounded-[2rem] shadow-sm transition-colors duration-700 border" style={{ backgroundColor: surfaceColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}>
+            
+            {/* --- 👇 MynStylist AI Section --- */}
+            <div className="mb-2 p-5 rounded-2xl border" style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)' }}>
+              <h2 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: textColor }}>
+                <Sparkles className="w-5 h-5" style={{ color: accentColor }} /> MynStylist
+              </h2>
+              
+              <div className="flex gap-3 flex-wrap items-center">
+                <input
+                  className="flex-1 min-w-[140px] border rounded-full px-4 py-2.5 text-sm outline-none bg-transparent"
+                  style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', color: textColor }}
+                  placeholder="Occasion (e.g., Farewell)"
+                  value={occasion}
+                  onChange={(e) => setOccasion(e.target.value)}
+                />
+
+                <input
+                  type="number"
+                  className="w-28 border rounded-full px-4 py-2.5 text-sm outline-none bg-transparent"
+                  style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', color: textColor }}
+                  placeholder="Budget ₹"
+                  value={budget}
+                  onChange={(e) => setBudget(Number(e.target.value))}
+                />
+
+                <select
+                  className="w-28 border rounded-full px-4 py-2.5 text-sm outline-none bg-transparent appearance-none"
+                  style={{ borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)', color: textColor }}
+                  value={weather}
+                  onChange={(e) => setWeather(e.target.value)}
+                >
+                  <option className="text-black">Hot</option>
+                  <option className="text-black">Cold</option>
+                  <option className="text-black">Rainy</option>
+                  <option className="text-black">Sunny</option>
+                </select>
+
+                <button
+                  onClick={handleAIStylist}
+                  disabled={isStylistLoading}
+                  className="text-white px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  {isStylistLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  Generate Outfit
+                </button>
+              </div>
+            </div>
+
+            {/* AI Reason Display */}
+            {aiReason && (
+              <div className="mb-2 rounded-2xl p-4 text-sm font-medium border border-dashed flex gap-3 items-start" style={{ backgroundColor: `${accentColor}10`, color: textColor, borderColor: `${accentColor}50` }}>
+                <Sparkles className="w-5 h-5 shrink-0 mt-0.5" style={{ color: accentColor }} />
+                <span className="leading-relaxed">{aiReason}</span>
+              </div>
+            )}
+
+            {/* Regular Search */}
             <div className="relative shrink-0">
               <Search className="w-5 h-5 absolute left-5 top-1/2 -translate-y-1/2 opacity-40" style={{ color: textColor }} />
               <input 
                 type="text" 
-                placeholder="Search products (e.g., dress, jeans)..." 
+                placeholder="Or search products manually..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full rounded-full pl-14 pr-6 py-3.5 outline-none transition-colors bg-transparent border shadow-sm text-sm"
@@ -330,7 +454,7 @@ export default function BuilderPage() {
             </div>
 
             <div className="flex-grow overflow-y-auto no-scrollbar pb-4 pr-2">
-              {isLoading ? (
+              {isLoading || isStylistLoading ? (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                   <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: `${accentColor}40`, borderTopColor: accentColor }} />
                 </div>
@@ -365,7 +489,6 @@ export default function BuilderPage() {
           <div className="lg:col-span-5 flex flex-col p-6 md:p-8 rounded-[2rem] shadow-sm transition-colors duration-700 border min-h-[500px]" style={{ backgroundColor: surfaceColor, borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}>
             
             <div className="flex flex-col gap-5 mb-8 shrink-0">
-              {/* 👇 FIXED: AI Editor Button beside Title */}
               <div className="flex items-center justify-between gap-4 w-full">
                 <input 
                   type="text" 
@@ -392,7 +515,7 @@ export default function BuilderPage() {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3 h-3" style={{ color: accentColor }} /> AI Fashion Editor
+                      <Sparkles className="w-3 h-3" style={{ color: accentColor }} /> AI Editorial
                     </>
                   )}
                 </button>

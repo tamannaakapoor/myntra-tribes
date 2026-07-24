@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useTribeStore } from '@/store/useTribeStore';
 import { 
   Trophy, LogOut, Plus, Sparkles, ImageIcon, Wand2, ArrowRight, ArrowLeft,
   BookOpen, CheckCircle2, ShieldAlert, Award, Server
@@ -33,10 +34,11 @@ function NavAvatar({ skinTone, hairStyle }: { skinTone: string, hairStyle: strin
 export default function AcademyPage() {
   const router = useRouter();
   
-  const [avatarConfig, setAvatarConfig] = useState({ skin_color: '#E0B594', hair: 'Long' });
-  const [points, setPoints] = useState(500);
+  // --- ZUSTAND GLOBAL STATE ---
+  const globalPoints = useTribeStore((state) => state.points);
+  const addGlobalPoints = useTribeStore((state) => state.addPoints);
 
-  // Separate Navigation State from Completion State
+  const [avatarConfig, setAvatarConfig] = useState({ skin_color: '#E0B594', hair: 'Long' });
   const [guideStep, setGuideStep] = useState(0); 
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -47,17 +49,11 @@ export default function AcademyPage() {
   };
 
   useEffect(() => {
-    // Check local storage for persistent points and completion status
-    const savedPoints = localStorage.getItem('tribe_points');
-    if (savedPoints) setPoints(Number(savedPoints));
-
     const completedStatus = localStorage.getItem('academy_completed');
     if (completedStatus === 'true') {
       setIsCompleted(true);
-      // We removed the setGuideStep(2) here so the user always starts on page 1 when revisiting!
     }
 
-    // Fetch Avatar
     const token = localStorage.getItem('tribe_jwt');
     const fetchAvatar = async () => {
       if (!token) return;
@@ -71,35 +67,40 @@ export default function AcademyPage() {
     fetchAvatar();
   }, []);
 
-  // --- NAVIGATION CONTROLS ---
-  const handleNext = () => {
-    if (guideStep < 2) setGuideStep(prev => prev + 1);
-  };
+  const handleNext = () => { if (guideStep < 2) setGuideStep(prev => prev + 1); };
+  const handlePrev = () => { if (guideStep > 0) setGuideStep(prev => prev - 1); };
 
-  const handlePrev = () => {
-    if (guideStep > 0) setGuideStep(prev => prev - 1);
-  };
-
-  const handleClaimReward = () => {
-    // Only add points if they haven't completed it before
+  const handleClaimReward = async () => {
     if (!isCompleted) {
       setIsCompleted(true);
-      const currentPoints = Number(localStorage.getItem('tribe_points') || 500);
-      const newPoints = currentPoints + 100;
       
-      localStorage.setItem('tribe_points', newPoints.toString());
+      // 1. Instant UI Update
+      addGlobalPoints(100); 
       localStorage.setItem('academy_completed', 'true');
-      setPoints(newPoints);
+
+      // 2. Permanent Database Sync
+      const token = localStorage.getItem('tribe_jwt');
+      if (token) {
+        try {
+          await fetch(`${getApiUrl()}/user/award-points`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ amount: 100 })
+          });
+        } catch (error) {
+          console.warn("Could not sync academy reward to database.");
+        }
+      }
     }
   };
 
   return (
     <main className="min-h-screen bg-[#FFF5F8] text-[#111111] font-sans relative overflow-x-hidden pb-20">
-      
-      {/* Background aesthetic */}
       <div className="absolute top-[-10%] left-[-5%] w-[800px] h-[800px] bg-[#ff3f6c]/10 rounded-full blur-[120px] pointer-events-none mix-blend-multiply" />
 
-      {/* --- NAVBAR --- */}
       <nav className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-[#FBCFE8]/50">
         <div className="max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => router.push('/dashboard')}>
@@ -121,11 +122,11 @@ export default function AcademyPage() {
 
           <div className="flex items-center gap-4">
             <motion.div 
-              key={points} 
+              key={globalPoints} 
               initial={{ scale: 1.2, backgroundColor: '#4ade80' }} animate={{ scale: 1, backgroundColor: 'rgba(255, 63, 108, 0.1)' }}
               className="hidden sm:flex items-center gap-2 text-[#ff3f6c] px-4 py-2 rounded-full font-bold text-sm transition-colors duration-500"
             >
-              <Trophy className="w-4 h-4" /> {points} pts
+              <Trophy className="w-4 h-4" /> {Math.max(0, globalPoints)} pts
             </motion.div>
             <button onClick={() => router.push('/persona')} className="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center hover:scale-105 transition-transform cursor-pointer ring-2 ring-transparent hover:ring-[#ff3f6c]/30" style={{ backgroundColor: `${avatarConfig.skin_color}40` }}>
                <NavAvatar skinTone={avatarConfig.skin_color} hairStyle={avatarConfig.hair} />
@@ -138,7 +139,6 @@ export default function AcademyPage() {
       </nav>
 
       <div className="max-w-[1200px] mx-auto px-6 pt-32 relative z-10">
-        
         <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 text-sm font-bold text-[#888888] hover:text-[#111111] transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
@@ -146,22 +146,18 @@ export default function AcademyPage() {
         <div className="bg-white rounded-[2.5rem] p-8 md:p-14 overflow-hidden relative shadow-lg border border-[#FBCFE8]/50">
           <div className="flex flex-col lg:flex-row gap-12 lg:gap-24">
             
-            {/* Left Column: Progress Sidebar */}
             <div className="w-full lg:w-1/3 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 text-[#ff3f6c] mb-4">
                   <span className="bg-[#FFF5F8] p-2 rounded-full"><BookOpen className="w-5 h-5" /></span>
                   <span className="text-[10px] font-bold tracking-[0.2em] uppercase">User Guide</span>
                 </div>
-                <h2 className="text-4xl font-bold mb-4 text-[#111111]" style={{ fontFamily: 'Georgia, serif' }}>
-                  Tribe Academy.
-                </h2>
+                <h2 className="text-4xl font-bold mb-4 text-[#111111]" style={{ fontFamily: 'Georgia, serif' }}>Tribe Academy.</h2>
                 <p className="text-[#666666] text-sm leading-relaxed mb-8">
                   Master the Lookbook builder, understand how our backend curates your feed, and learn how to earn Tribe Points to dominate the leaderboard.
                 </p>
               </div>
 
-              {/* Progress Tracker vs Badge */}
               {!isCompleted ? (
                 <div className="bg-[#FFF5F8] border border-[#FBCFE8] p-6 rounded-3xl">
                   <div className="flex justify-between text-xs font-bold text-[#888888] mb-3 uppercase tracking-wider">
@@ -169,10 +165,7 @@ export default function AcademyPage() {
                     <span className="text-[#ff3f6c]">{Math.round((guideStep / 2) * 100)}%</span>
                   </div>
                   <div className="w-full h-2 bg-white rounded-full overflow-hidden mb-4 border border-[#FBCFE8]/50">
-                    <motion.div 
-                      initial={{ width: 0 }} animate={{ width: `${(guideStep / 2) * 100}%` }} 
-                      className="h-full bg-gradient-to-r from-[#ff3f6c] to-[#ff99b3]"
-                    />
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${(guideStep / 2) * 100}%` }} className="h-full bg-gradient-to-r from-[#ff3f6c] to-[#ff99b3]" />
                   </div>
                   <p className="text-xs text-[#888888] flex items-center gap-1.5"><Award className="w-4 h-4 text-[#E5C07B]"/> Complete to earn +100 pts</p>
                 </div>
@@ -187,10 +180,8 @@ export default function AcademyPage() {
               )}
             </div>
 
-            {/* Right Column: Guide Content */}
             <div className="w-full lg:w-2/3">
               <AnimatePresence mode="wait">
-                
                 {guideStep === 0 && (
                   <motion.div key="step0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-gray-50 border border-gray-100 rounded-[2rem] p-8 md:p-10 shadow-sm">
                     <div className="flex items-center gap-3 mb-6"><Sparkles className="w-8 h-8 text-[#E5C07B]"/><h3 className="text-3xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>1. Understand Your Tribe</h3></div>
@@ -238,37 +229,24 @@ export default function AcademyPage() {
                 )}
               </AnimatePresence>
 
-              {/* --- NEW DYNAMIC NAVIGATION BUTTONS --- */}
               <div className="mt-8 flex items-center justify-between w-full">
-                
-                {/* Previous Button (Hidden on step 0) */}
                 {guideStep > 0 ? (
                   <button onClick={handlePrev} className="text-[#888888] hover:text-[#111111] font-bold flex items-center gap-2 transition-colors">
                     <ArrowLeft className="w-4 h-4" /> Previous
                   </button>
                 ) : <div />}
 
-                {/* Next / Finish Buttons */}
                 <div>
                   {guideStep < 2 ? (
-                    <button 
-                      onClick={handleNext} 
-                      className="bg-[#111111] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#222222] transition-colors shadow-lg"
-                    >
+                    <button onClick={handleNext} className="bg-[#111111] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#222222] transition-colors shadow-lg">
                       Next Chapter <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : !isCompleted ? (
-                    <button 
-                      onClick={handleClaimReward} 
-                      className="bg-[#111111] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#222222] transition-colors shadow-lg"
-                    >
+                    <button onClick={handleClaimReward} className="bg-[#111111] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#222222] transition-colors shadow-lg">
                       Claim +100 pts & Finish <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <button 
-                      onClick={() => router.push('/builder')} 
-                      className="bg-[#ff3f6c] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#E11D48] transition-colors shadow-lg shadow-[#ff3f6c]/20"
-                    >
+                    <button onClick={() => router.push('/builder')} className="bg-[#ff3f6c] text-white px-8 py-4 rounded-full font-bold flex items-center gap-2 hover:bg-[#E11D48] transition-colors shadow-lg shadow-[#ff3f6c]/20">
                       Start Building Lookbooks <Plus className="w-4 h-4" />
                     </button>
                   )}

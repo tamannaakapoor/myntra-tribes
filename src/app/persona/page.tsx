@@ -35,6 +35,17 @@ export default function PersonaPage() {
   const setGlobalPoints = useTribeStore((state) => state.setPoints);
   const setGlobalTribe = useTribeStore((state) => state.setTribe); // Sync DB tribe to app
   
+  const tribeMeta = TRIBE_META[currentTribe] || TRIBE_META.default;
+
+  // --- API HELPER (From remote branch) ---
+  const getApiUrl = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || "https://myntra-tribes.onrender.com/api";
+    if (!url.endsWith("/api")) {
+      url = `${url.replace(/\/$/, "")}/api`;
+    }
+    return url;
+  };
+
   // --- DYNAMIC DB STATE ---
   const [isMounted, setIsMounted] = useState(false);
   
@@ -48,7 +59,7 @@ export default function PersonaPage() {
     insiderSpend: number;
     savings: number;
     rewardsAvailable: number;
-    fetchedTribe: string | null; // Purely from DB
+    fetchedTribe: string | null; 
   }>({ 
     name: 'Trendsetter', 
     email: '', 
@@ -89,7 +100,7 @@ export default function PersonaPage() {
   useEffect(() => {
     setIsMounted(true);
     const token = localStorage.getItem('tribe_jwt');
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://myntra-tribes.onrender.com/api';
+    const apiUrl = getApiUrl(); // Using the merged helper function
 
     // 0. INSTANTLY load local state so the UI feels lightning fast
     let localName = 'Trendsetter';
@@ -126,7 +137,7 @@ export default function PersonaPage() {
           const data = await res.json();
           
           if (data.user?.points !== undefined) {
-             setGlobalPoints(data.user.points);
+             setGlobalPoints(Math.max(0, data.user.points)); // Enforce positive math
           }
 
           // Fetch the vibe from DB and sync it locally
@@ -197,16 +208,39 @@ export default function PersonaPage() {
     router.push('/auth');
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  // --- MYNBOT CHAT LOGIC (Merged with Remote Branch Backend logic) ---
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    
-    setChatMessages(prev => [...prev, { sender: 'user', text: chatInput }]);
-    setChatInput('');
-    
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { sender: 'bot', text: 'Got it! Retrieving your latest order details from the database now. Give me just a second...' }]);
-    }, 1000);
+
+    const message = chatInput;
+    setChatMessages((prev) => [...prev, { sender: "user", text: message }]);
+    setChatInput("");
+
+    try {
+      const token = localStorage.getItem("tribe_jwt");
+      const res = await fetch(`${getApiUrl()}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      const data = await res.json();
+
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: data.reply || "Sorry, I couldn't generate a response." },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Something went wrong while contacting the assistant." },
+      ]);
+    }
   };
 
   // --- DYNAMIC INSIDER MATH ---
@@ -231,6 +265,23 @@ export default function PersonaPage() {
   const spendNeeded = nextTier ? nextTier.threshold - userData.insiderSpend : 0;
   const savingsFormatted = (userData.savings / 1000).toFixed(1) + 'K';
 
+  // --- SAFE TRIBE RENDER LOGIC ---
+  let finalTribeSlug = 'default';
+  if (userData.fetchedTribe && userData.fetchedTribe !== 'default') {
+    finalTribeSlug = userData.fetchedTribe;
+  } else if (currentTribe && currentTribe !== 'default') {
+    finalTribeSlug = currentTribe;
+  } else {
+    try {
+      if (typeof window !== 'undefined') {
+        const storage = JSON.parse(localStorage.getItem('tribe-storage') || '{}');
+        if (storage?.state?.currentTribe && storage.state.currentTribe !== 'default') {
+          finalTribeSlug = storage.state.currentTribe;
+        }
+      }
+    } catch(e) {}
+  }
+
   if (!isMounted) return null;
 
   return (
@@ -252,7 +303,7 @@ export default function PersonaPage() {
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#FBCFE8]/50 text-sm font-bold">
               <Sparkles className="w-3.5 h-3.5 text-[#ff3f6c]" /> 
-              <span>₹{globalPoints}</span> 
+              <span>₹{Math.max(0, globalPoints)}</span> 
             </button>
             <button onClick={() => setIsChatOpen(true)} className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow-sm border border-[#FBCFE8]/50 text-sm font-bold text-[#666666] hover:text-[#ff3f6c] transition-colors">
               <Headset className="w-4 h-4" /> Help
@@ -270,9 +321,9 @@ export default function PersonaPage() {
             </div>
           </div>
           
-          {/* Username (Fallback applied to prevent empty string break) */}
+          {/* Username */}
           <h2 className="text-3xl font-bold mb-3 capitalize tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
-            {userData.name || 'Trendsetter'}
+            {userData.name}
           </h2>
           
           {/* Followers & Following */}
@@ -300,25 +351,16 @@ export default function PersonaPage() {
             </button>
           </div>
 
-          {/* Database-fetched Vibe Assigned (Bulletproof rendering) */}
-          {(() => {
-            const activeTribeSlug = userData.fetchedTribe || currentTribe;
-            if (activeTribeSlug && activeTribeSlug !== 'default') {
-              const meta = TRIBE_META[activeTribeSlug] || TRIBE_META.default;
-              return (
-                <span className="mt-3 text-xs font-bold px-4 py-2 rounded-full border bg-white shadow-sm inline-block" style={{ color: meta.accent, borderColor: `${meta.accent}40` }}>
-                  Assigned Tribe: {meta.label}
-                </span>
-              );
-            }
-            return null;
-          })()}
+          {/* Database-fetched Vibe Assigned */}
+          {finalTribeSlug !== 'default' && (
+            <span className="mt-3 text-xs font-bold px-4 py-2 rounded-full border bg-white shadow-sm inline-block" style={{ color: TRIBE_META[finalTribeSlug]?.accent || '#ff3f6c', borderColor: `${TRIBE_META[finalTribeSlug]?.accent || '#ff3f6c'}40` }}>
+              Assigned Tribe: {TRIBE_META[finalTribeSlug]?.label || finalTribeSlug}
+            </span>
+          )}
         </div>
 
         {/* --- MAIN QUICK LINKS (Expandable Orders) --- */}
         <div className="bg-white rounded-[2rem] p-2 shadow-sm border border-[#FBCFE8]/50 mb-6 overflow-hidden">
-          
-          {/* Orders Section */}
           <button onClick={() => toggleSection('orders')} className="w-full flex items-center justify-between p-4 hover:bg-[#FFF5F8] rounded-2xl transition-colors group">
             <div className="flex items-center gap-4">
               <Package className="w-5 h-5 text-[#666666] group-hover:text-[#ff3f6c] transition-colors" />
@@ -410,7 +452,7 @@ export default function PersonaPage() {
             {expandedSection === 'points' && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-4">
                 <div className="p-4 bg-[#FFF5F8] rounded-2xl border border-[#FBCFE8]/50 text-center">
-                  <p className="text-4xl font-black text-[#ff3f6c] mb-1">{globalPoints}</p>
+                  <p className="text-4xl font-black text-[#ff3f6c] mb-1">{Math.max(0, globalPoints)}</p>
                   <p className="text-xs text-[#888888] font-bold uppercase tracking-wider">Total Tribe Points</p>
                 </div>
               </motion.div>
@@ -478,7 +520,7 @@ export default function PersonaPage() {
           </AnimatePresence>
         </div>
 
-        {/* --- PROMO BANNER (Academy Link) --- */}
+        {/* --- PROMO BANNER --- */}
         <motion.div 
           whileHover={{ scale: 1.02 }}
           onClick={() => router.push('/academy')}
@@ -495,18 +537,13 @@ export default function PersonaPage() {
             <p className="text-sm text-[#111111]/80">Read the playbook, earn <span className="font-black">+100 pts</span></p>
           </div>
         </motion.div>
-
       </div>
 
-      {/* ========================================== */}
-      {/* OVERLAY 1: MYNBOT CHAT (Orders Support)    */}
-      {/* ========================================== */}
+      {/* --- MYNBOT CHAT OVERLAY --- */}
       <AnimatePresence>
         {isChatOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }} 
-            animate={{ opacity: 1, y: 0, scale: 1 }} 
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 50, scale: 0.9 }}
             className="fixed bottom-4 right-4 md:bottom-10 md:right-10 w-[90%] max-w-[350px] bg-white rounded-3xl shadow-2xl border border-[#FBCFE8] overflow-hidden z-50 flex flex-col h-[500px]"
           >
             <div className="bg-gradient-to-r from-[#ff3f6c] to-[#ff99b3] p-4 flex justify-between items-center text-white">
@@ -534,8 +571,7 @@ export default function PersonaPage() {
             <form onSubmit={handleSendMessage} className="p-3 border-t border-[#FBCFE8]/50 bg-white flex gap-2">
               <input 
                 type="text" 
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                value={chatInput} onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Ask about your orders..." 
                 className="flex-grow bg-[#FFF5F8] border border-[#FBCFE8] rounded-full px-4 py-2 text-sm focus:outline-none focus:border-[#ff3f6c]"
               />
@@ -547,32 +583,25 @@ export default function PersonaPage() {
         )}
       </AnimatePresence>
 
-      {/* ========================================== */}
-      {/* OVERLAY 2: DYNAMIC M INSIDER MODAL         */}
-      {/* ========================================== */}
+      {/* --- M INSIDER MODAL --- */}
       <AnimatePresence>
         {isInsiderOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: '100%' }} 
-            animate={{ opacity: 1, y: 0 }} 
-            exit={{ opacity: 0, y: '100%' }}
+            initial={{ opacity: 0, y: '100%' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-0 bg-[#FAFAFA] z-[100] overflow-y-auto font-sans"
           >
-            {/* Dark Header Section */}
             <div className="bg-[#111111] text-white pt-12 pb-10 px-6 rounded-b-[2.5rem] relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#C19A5B]/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none" />
-              
               <button onClick={() => setIsInsiderOpen(false)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors">
                 <X className="w-5 h-5 text-white" />
               </button>
-
               <div className="flex items-center gap-2 text-[#C19A5B] font-bold tracking-widest text-xs mb-2 uppercase">
                 <Crown className="w-4 h-4 fill-[#C19A5B]" /> {currentTier.name} INSIDER
               </div>
               <h1 className="text-4xl font-black mb-1 tracking-tight uppercase">{currentTier.name} MEMBER</h1>
               <p className="text-sm text-[#888888] mb-8">Member since {new Date().getFullYear()}</p>
-
+              
               <div className="flex gap-4 mb-10">
                 <div className="bg-white/10 border border-white/20 rounded-2xl p-4 flex-1 backdrop-blur-sm">
                   <div className="flex items-center gap-2 text-[#C19A5B] mb-1">
@@ -588,16 +617,10 @@ export default function PersonaPage() {
                 </div>
               </div>
 
-              {/* Progress Bar (Dynamic) */}
+              {/* Progress Bar */}
               <div className="relative pt-4 max-w-[400px]">
                 <div className="h-1 bg-white/20 rounded-full w-full absolute top-[21px]" />
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPct}%` }}
-                  transition={{ duration: 1, ease: 'easeOut' }}
-                  className="h-1 bg-[#C19A5B] rounded-full absolute top-[21px] z-10" 
-                />
-                
+                <motion.div initial={{ width: 0 }} animate={{ width: `${progressPct}%` }} transition={{ duration: 1, ease: 'easeOut' }} className="h-1 bg-[#C19A5B] rounded-full absolute top-[21px] z-10" />
                 <div className="flex justify-between items-center relative z-20">
                   <div className="flex flex-col items-center">
                     <div className={`w-4 h-4 rounded-full mb-2 ring-4 ring-[#111111] ${userData.insiderSpend >= INSIDER_TIERS[0].threshold ? 'bg-[#C19A5B]' : 'bg-white/40'}`} />
@@ -617,7 +640,6 @@ export default function PersonaPage() {
               </div>
             </div>
 
-            {/* Warning / Upgrade Bar (Dynamic) */}
             {nextTier && (
               <div className="bg-[#C19A5B] text-white px-5 py-4 mx-4 -mt-6 rounded-2xl relative z-10 shadow-lg flex items-start gap-3 max-w-[600px] md:mx-auto md:-mt-6">
                 <Info className="w-5 h-5 shrink-0 mt-0.5" />
@@ -626,8 +648,7 @@ export default function PersonaPage() {
             )}
 
             <div className="px-4 py-10 max-w-[800px] mx-auto">
-              
-              {/* Horizontal Carousel (Trending Now - Dynamic Map) */}
+              {/* Horizontal Carousel */}
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="h-px bg-[#E5E5E5] flex-grow max-w-[50px]" />
                 <h3 className="text-xl font-bold font-serif text-[#111111]">Trending Now</h3>
@@ -683,7 +704,6 @@ export default function PersonaPage() {
                 <div className="h-px bg-[#E5E5E5] flex-grow max-w-[30px]" />
               </div>
 
-              {/* Claimed Rewards */}
               <div className="bg-white border border-[#E5E5E5] rounded-2xl p-4 flex items-center justify-between mb-10 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-[#FFF8EE] rounded-full flex items-center justify-center border border-[#F3D9C6]">
@@ -697,7 +717,6 @@ export default function PersonaPage() {
                 <ChevronRight className="w-5 h-5 text-[#888888]" />
               </div>
 
-              {/* Accordion / FAQ */}
               <h3 className="text-2xl font-bold font-serif mb-6 text-[#111111]">Know more about the<br/>Loyalty Program</h3>
               <div className="flex flex-col gap-0 border-t border-[#E5E5E5]">
                 <div className="py-5 border-b border-[#E5E5E5] flex justify-between items-center cursor-pointer">
@@ -719,7 +738,6 @@ export default function PersonaPage() {
               </div>
             </div>
             
-            {/* Footer */}
             <div className="bg-[#111111] py-8 text-center mt-auto">
               <div className="flex items-center justify-center gap-2 text-white font-bold text-xl mb-2 tracking-widest">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 font-serif font-black italic">M</span> INSIDER

@@ -327,10 +327,63 @@ const getTribeProducts = async (req, res) => {
     });
   }
 };
+// POST /api/tribes/select
+const selectTribe = async (req, res) => {
+  try {
+    const { slug } = req.body;
 
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        message: "Tribe slug is required",
+      });
+    }
+
+    // Find tribe by slug
+    const { data: tribe, error } = await supabase
+      .from("tribes")
+      .select("id, name, slug")
+      .eq("slug", slug)
+      .single();
+
+    if (error || !tribe) {
+      return res.status(404).json({
+        success: false,
+        message: "Tribe not found",
+      });
+    }
+
+    // Update user's active tribe
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        active_tribe_id: tribe.id,
+      })
+      .eq("id", req.user.id);
+
+    if (updateError) throw updateError;
+
+    return res.status(200).json({
+      success: true,
+      message: "Tribe selected successfully",
+      tribe,
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to select tribe",
+      error: err.message,
+    });
+  }
+};
 module.exports = {
   assignUserTribe,
   getAllTribes,
   getSingleTribe,
   getTribeProducts,
+    selectTribe,
+
 };
