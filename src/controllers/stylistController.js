@@ -26,7 +26,10 @@ const generateOutfit = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("========== STYLIST ERROR ==========");
+  console.error(err);
+  console.error(err.stack);
+  console.error("===================================");
 
     return res.status(500).json({
       success: false,
